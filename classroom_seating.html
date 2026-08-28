@@ -1,0 +1,5406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>교실 자리 배치도</title>
+  <style>
+    :root {
+      --bg: #edf2f7;
+      --panel: #ffffff;
+      --line: #d4dce8;
+      --text: #1f2937;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --dark: #111827;
+      --shadow: 0 14px 36px rgba(15, 23, 42, 0.12);
+      --radius: 22px;
+      --seat-gap: clamp(5px, 0.75vw, 12px);
+      --row-gap: clamp(7px, 0.9vw, 14px);
+      --seat-height: clamp(76px, 9vw, 118px);
+      --pc-font: clamp(22px, 2.2vw, 34px);
+      --student-font: clamp(17px, 1.9vw, 29px);
+      --student-no-font: clamp(14px, 1.25vw, 20px);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, .09), transparent 28%),
+        radial-gradient(circle at top right, rgba(16, 185, 129, .08), transparent 25%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 18px;
+    }
+
+    .header-inner {
+      max-width: 1500px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 23px;
+      letter-spacing: -0.04em;
+    }
+
+    .sub {
+      margin-top: 3px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 13px;
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      transition: transform .05s ease, background .15s ease;
+    }
+
+    button:hover { background: #1d4ed8; }
+    button:active { transform: translateY(1px); }
+
+    button.secondary {
+      background: #eef2ff;
+      color: #1e40af;
+      border: 1px solid #c7d2fe;
+    }
+
+    button.secondary:hover { background: #e0e7ff; }
+
+    button.ghost {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    button.ghost:hover { background: #f8fafc; }
+
+    button.danger {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    button.danger:hover { background: #fecaca; }
+
+    button.mode {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    button.mode.active {
+      background: var(--dark);
+      color: #fff;
+      border-color: var(--dark);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 16px 18px 26px;
+    }
+
+    .main-board {
+      background: rgba(255,255,255,.96);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      min-height: calc(100vh - 105px);
+    }
+
+    .board-top {
+      display: block;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+    }
+
+    .board-summary {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .progress-control-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .class-title {
+      font-size: 32px;
+      font-weight: 950;
+      letter-spacing: -0.05em;
+      line-height: 1.05;
+    }
+
+    .class-meta {
+      margin-top: 6px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .progress-preview {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: auto;
+      max-width: none;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      padding: 10px 12px;
+      font-size: clamp(16px, 1.35vw, 20px);
+      line-height: 1.6;
+      color: #334155;
+    }
+
+    .progress-preview b {
+      color: #0f172a;
+    }
+
+    .progress-preview.empty {
+      color: #64748b;
+      border-style: dashed;
+    }
+
+    .progress-preview .progress-date {
+      display: inline-block;
+      font-size: clamp(13px, 1.1vw, 16px);
+      font-weight: 900;
+      color: #1d4ed8;
+      margin-right: 6px;
+      margin-bottom: 3px;
+    }
+
+    .mini-controls {
+      flex: 0 0 auto;
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+      align-items: end;
+      justify-content: flex-start;
+      align-self: flex-start;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      color: #475569;
+      margin: 0 0 5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 11px;
+      outline: none;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+    }
+
+    .control-field { width: 130px; }
+    .control-field:nth-child(2) { width: 96px; }
+    .control-field.wide { width: 180px; }
+
+    .mode-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .mode-help {
+      color: var(--muted);
+      font-size: 13px;
+      margin-left: 4px;
+    }
+
+    .seat-area {
+      border: 1px solid #cbd5e1;
+      border-radius: 20px;
+      background:
+        linear-gradient(90deg, rgba(148,163,184,.10) 1px, transparent 1px),
+        linear-gradient(rgba(148,163,184,.10) 1px, transparent 1px),
+        #f8fafc;
+      background-size: 32px 32px;
+      padding: clamp(8px, 1vw, 16px);
+      min-height: 560px;
+      overflow: hidden;
+    }
+
+    .front {
+      text-align: center;
+      font-weight: 950;
+      letter-spacing: -0.03em;
+      color: #334155;
+      background: #fff;
+      border: 2px dashed #94a3b8;
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .front.bottom {
+      margin-top: 14px;
+      margin-bottom: 0;
+    }
+
+    .seat-rows {
+      width: 100%;
+      display: grid;
+      gap: var(--row-gap);
+    }
+
+    .lab-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(26px, .34fr) repeat(4, minmax(0, 1fr));
+      gap: var(--seat-gap);
+      align-items: stretch;
+    }
+
+    .lab-row.mirrored {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(26px, .34fr) repeat(3, minmax(0, 1fr));
+    }
+
+    .classroom-grid {
+      width: 100%;
+      display: grid;
+      gap: var(--seat-gap);
+      align-items: stretch;
+    }
+
+    .aisle {
+      min-height: var(--seat-height);
+      border-radius: 16px;
+      border: 1px dashed #cbd5e1;
+      background: rgba(255,255,255,.55);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #94a3b8;
+      font-size: clamp(10px, .9vw, 12px);
+      font-weight: 900;
+      writing-mode: vertical-rl;
+    }
+
+    .seat {
+      position: relative;
+      min-height: var(--seat-height);
+      border-radius: clamp(14px, 1.4vw, 20px);
+      border: 3px solid #93c5fd;
+      padding: clamp(6px, .8vw, 10px);
+      cursor: pointer;
+      overflow: visible;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, .16);
+      transition: transform .08s ease, box-shadow .15s ease, border .15s ease, background .15s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      min-width: 0;
+    }
+
+    .seat:hover {
+      transform: translateY(-2px);
+      border-color: #1d4ed8;
+      box-shadow: 0 14px 26px rgba(37, 99, 235, .24);
+    }
+
+    .seat.selected {
+      border-color: var(--dark);
+      box-shadow: 0 0 0 4px rgba(17,24,39,.12);
+    }
+
+    .pc-no {
+      position: absolute;
+      top: clamp(6px, .7vw, 9px);
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: clamp(44px, 4.6vw, 64px);
+      height: clamp(30px, 3vw, 42px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--pc-font);
+      line-height: 1;
+      font-weight: 1000;
+      letter-spacing: -0.06em;
+      color: #0f172a;
+      background: rgba(255,255,255,.88);
+      border: 2px solid rgba(71,85,105,.55);
+      border-radius: 8px;
+      padding: 0 8px;
+      z-index: 1;
+      text-align: center;
+    }
+
+    .student-line {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(4px, .55vw, 8px);
+      width: 100%;
+      min-width: 0;
+      padding-top: clamp(28px, 3.2vw, 44px);
+    }
+
+    .student-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: clamp(30px, 3vw, 44px);
+      height: clamp(24px, 2.2vw, 32px);
+      padding: 0 clamp(7px, .7vw, 11px);
+      border-radius: 999px;
+      background: #1d4ed8;
+      color: #ffffff;
+      font-size: var(--student-no-font);
+      font-weight: 950;
+      flex: 0 0 auto;
+    }
+
+    .student-name {
+      font-size: var(--student-font);
+      font-weight: 1000;
+      letter-spacing: -0.07em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #0f172a;
+      line-height: 1.05;
+      min-width: 0;
+    }
+
+    .empty-name {
+      color: #64748b;
+      font-size: clamp(15px, 1.35vw, 21px);
+      font-weight: 900;
+      margin-top: clamp(28px, 3.2vw, 44px);
+      text-align: center;
+    }
+
+    .note-dot {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #d97706;
+      border: 2px solid #fff;
+    }
+
+    .tooltip {
+      display: none;
+      position: absolute;
+      z-index: 30;
+      left: 8px;
+      right: 8px;
+      bottom: calc(100% + 8px);
+      background: #111827;
+      color: #fff;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      box-shadow: 0 14px 26px rgba(0,0,0,.22);
+    }
+
+    .seat:hover .tooltip { display: block; }
+
+    .att-badge {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 950;
+      background: #e5e7eb;
+      color: #374151;
+      z-index: 2;
+    }
+
+    .level-low { background: linear-gradient(135deg, #fee2e2 0%, #fff1f2 100%); border-color: #ef4444; }
+    .level-normal { background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%); border-color: #3b82f6; }
+    .level-excellent { background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%); border-color: #22c55e; }
+    .level-observe { background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border-color: #f59e0b; }
+    .level-default { background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%); border-color: #3b82f6; }
+    .level-basic { background: linear-gradient(135deg, #fee2e2 0%, #fff1f2 100%); border-color: #ef4444; }
+    .level-advanced { background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%); border-color: #22c55e; }
+    .level-attention { background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border-color: #f59e0b; }
+    .level-support, .level-leader { background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%); border-color: #3b82f6; }
+
+    .att-출석 { border-color: #22c55e; }
+    .att-지각 { border-color: #8b5cf6; }
+    .att-결석 { border-color: #ef4444; }
+    .att-조퇴 { border-color: #f97316; }
+    .att-결과 { border-color: #f59e0b; }
+    .att-인정 { border-color: #0ea5e9; }
+
+    .att-출석 .att-badge { background: #dcfce7; color: #166534; }
+    .att-지각 .att-badge { background: #ede9fe; color: #5b21b6; }
+    .att-결석 .att-badge { background: #fee2e2; color: #991b1b; }
+    .att-조퇴 .att-badge { background: #ffedd5; color: #9a3412; }
+    .att-결과 .att-badge { background: #fef3c7; color: #92400e; }
+    .att-인정 .att-badge { background: #dbeafe; color: #1e40af; }
+
+    .seat.task-checked {
+      background: linear-gradient(135deg, #bbf7d0 0%, #ecfdf5 100%) !important;
+      border-color: #16a34a !important;
+      box-shadow: 0 10px 22px rgba(22, 163, 74, .24);
+    }
+
+    .task-check {
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border-radius: 8px;
+      border: 2px solid #94a3b8;
+      background: rgba(255,255,255,.92);
+      color: #64748b;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 1000;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+    }
+
+    .task-check.checked {
+      background: #16a34a;
+      border-color: #15803d;
+      color: #fff;
+    }
+
+    .task-check:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 12px rgba(15,23,42,.18);
+    }
+
+    #progressRecords table {
+      font-size: 14.5px;
+      line-height: 1.6;
+    }
+
+    #progressRecords th,
+    #progressRecords td {
+      padding: 10px;
+    }
+
+    .empty-seat {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border-color: #cbd5e1;
+      border-style: dashed;
+      box-shadow: none;
+    }
+
+    .blank-seat {
+      background: rgba(255,255,255,.46);
+      border-color: #e2e8f0;
+      border-style: dashed;
+      box-shadow: none;
+      color: #cbd5e1;
+      cursor: default;
+    }
+
+    .blank-seat:hover {
+      transform: none;
+      border-color: #e2e8f0;
+      box-shadow: none;
+    }
+
+    .blank-seat .empty-name {
+      color: #cbd5e1;
+      margin-top: 0;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #475569;
+      font-weight: 800;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 5px 8px;
+      background: #fff;
+    }
+
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid #cbd5e1;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, .52);
+      padding: 18px;
+      z-index: 100;
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    .modal {
+      width: min(1120px, 100%);
+      max-height: 91vh;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 26px 70px rgba(0,0,0,.28);
+    }
+
+    .modal.small { width: min(620px, 100%); }
+
+    .modal-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      padding: 15px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 19px;
+      letter-spacing: -0.03em;
+    }
+
+    .modal-body { padding: 18px; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 14px;
+    }
+
+    .tab {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .student-tabs {
+      margin-top: 14px;
+      margin-bottom: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .small-text {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      margin-top: 6px;
+    }
+
+    .class-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .chip {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    .chip.active {
+      background: var(--dark);
+      color: #fff;
+      border-color: var(--dark);
+    }
+
+
+    .chip-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      padding: 3px;
+    }
+
+    .chip-wrap .chip {
+      border: 0;
+      margin: 0;
+    }
+
+    .chip-delete {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border-radius: 10px;
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .chip-delete:hover {
+      background: #fecaca;
+    }
+
+    .period-row {
+      display: grid;
+      grid-template-columns: 70px 1fr 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 7px;
+    }
+
+    .period-row b { font-size: 13px; }
+
+    .timetable-grid {
+      display: grid;
+      grid-template-columns: 70px repeat(5, 1fr);
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .tt-head {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 950;
+      color: #334155;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #f1f5f9; }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: auto;
+      max-height: 430px;
+      margin-top: 10px;
+    }
+
+    .empty-box {
+      border: 1px dashed #cbd5e1;
+      border-radius: 16px;
+      background: #f8fafc;
+      padding: 26px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.65;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      background: #111827;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 999px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.22);
+      font-size: 14px;
+      display: none;
+      z-index: 1000;
+    }
+
+
+
+    #assignmentReportRecords {
+      max-height: 560px;
+    }
+
+    #assignmentReportRecords table {
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    #assignmentReportRecords th,
+    #assignmentReportRecords td {
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    #assignmentReportRecords td.memo-cell {
+      text-align: left;
+      white-space: normal;
+      min-width: 180px;
+    }
+
+    #assignmentReportRecords td.attendance-memo-cell {
+      text-align: left;
+      white-space: normal;
+      min-width: 180px;
+    }
+
+    .assignment-missing-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      width: auto;
+      margin: 0 0 8px;
+      padding: 9px 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .assignment-missing-toggle input {
+      width: auto;
+      margin: 0;
+      box-shadow: none;
+    }
+
+    .assignment-report-buttons {
+      margin-top: 0;
+    }
+
+    .assignment-date-group {
+      border: 1px solid #cbd5e1;
+      border-radius: 16px;
+      background: #ffffff;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .assignment-date-group summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 12px 14px;
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 950;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .assignment-date-group summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .assignment-date-group summary::after {
+      content: "펼치기";
+      font-size: 12px;
+      font-weight: 900;
+      color: #1d4ed8;
+      background: #dbeafe;
+      border-radius: 999px;
+      padding: 4px 8px;
+      flex: 0 0 auto;
+    }
+
+    .assignment-date-group[open] summary::after {
+      content: "접기";
+    }
+
+    .assignment-date-summary {
+      font-size: 13px;
+      color: #475569;
+      font-weight: 800;
+    }
+
+    .assignment-date-table {
+      overflow: auto;
+    }
+
+    .submit-ok {
+      font-weight: 900;
+      color: #166534;
+    }
+
+    .submit-no {
+      font-weight: 900;
+      color: #991b1b;
+    }
+
+    #assignmentReportRecords tr.assignment-missing-row td {
+      background: #fff7ed;
+    }
+
+    #assignmentReportRecords tr.assignment-missing-row:hover td {
+      background: #ffedd5;
+    }
+
+    #assignmentReportRecords .assignment-overview-table th.date-col,
+    #assignmentReportRecords .assignment-overview-table td.date-cell {
+      min-width: 118px;
+    }
+
+    .assignment-report-search input {
+      min-width: 160px;
+    }
+
+    @media (max-width: 960px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .progress-control-row { flex-direction: column; gap: 8px; }
+      .mini-controls { width: 100%; flex-wrap: wrap; }
+      .control-field, .control-field.wide, .control-field:nth-child(2) { width: calc(33.333% - 6px); }
+      .timetable-grid { grid-template-columns: 64px 1fr; }
+      .tt-head.day { display: none; }
+      .lab-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(18px, .22fr) repeat(4, minmax(0, 1fr));
+      }
+
+      .lab-row.mirrored {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(18px, .22fr) repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      header { padding: 10px; }
+      main { padding: 10px; }
+      .main-board { padding: 12px; }
+      .class-title { font-size: 25px; }
+      .mini-controls { padding: 8px; }
+      .control-field, .control-field.wide, .control-field:nth-child(2) { width: 100%; }
+      .seat-area { overflow-x: auto; }
+      .seat-rows { min-width: 720px; }
+    }
+
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 6mm;
+      }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      header,
+      .mode-bar,
+      .mini-controls,
+      .toast,
+      .modal-backdrop,
+      .legend {
+        display: none !important;
+      }
+
+      main {
+        max-width: none;
+        padding: 0;
+      }
+
+      .main-board {
+        border: 0;
+        box-shadow: none;
+        padding: 0;
+        min-height: 0;
+      }
+
+      .board-top {
+        margin-bottom: 4mm;
+        padding-bottom: 2mm;
+      }
+
+      .class-title {
+        font-size: 20pt;
+      }
+
+      .class-meta {
+        font-size: 9pt;
+        margin-top: 2mm;
+      }
+
+      .seat-area {
+        overflow: visible;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        padding: 3mm;
+        min-height: 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .front {
+        padding: 2mm;
+        margin-bottom: 2mm;
+        font-size: 10pt;
+      }
+
+      .front.bottom {
+        margin-top: 2mm;
+        margin-bottom: 0;
+      }
+
+      .seat-rows {
+        min-width: 0 !important;
+        gap: 1.6mm;
+      }
+
+      .lab-row {
+        grid-template-columns: repeat(3, 1fr) 8mm repeat(4, 1fr);
+        gap: 1.6mm;
+      }
+
+      .lab-row.mirrored {
+        grid-template-columns: repeat(4, 1fr) 8mm repeat(3, 1fr);
+      }
+
+      .classroom-grid {
+        gap: 1.6mm;
+      }
+
+      .seat,
+      .aisle {
+        min-height: 20mm;
+        border-width: 1.4px;
+        border-radius: 4mm;
+        box-shadow: none;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      .pc-no {
+        min-width: 10mm;
+        height: 6.5mm;
+        font-size: 12pt;
+        border-radius: 2mm;
+        top: 1.3mm;
+      }
+
+      .student-line {
+        padding-top: 7mm;
+      }
+
+      .student-num {
+        min-width: 8mm;
+        height: 5.5mm;
+        font-size: 8pt;
+      }
+
+      .student-name {
+        font-size: 13pt;
+      }
+
+      .empty-name {
+        font-size: 9pt;
+        margin-top: 7mm;
+      }
+
+      .att-badge,
+      .note-dot,
+      .tooltip {
+        display: none !important;
+      }
+
+      .task-check {
+        width: 5.5mm;
+        height: 5.5mm;
+        font-size: 9pt;
+        left: 1.2mm;
+        top: 1.2mm;
+        border-width: 1px;
+        border-radius: 1.5mm;
+      }
+    }
+
+    /* === 추가 기능 스타일: 타이머, 추첨기, 모둠 구성 === */
+    .group-badge {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(10px, 0.95vw, 13px);
+      font-weight: 900;
+      padding: 2px 8px;
+      border-radius: 10px;
+      color: #fff;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* 모둠별 테마 색상 팔레트 */
+    .group-color-1 { background: #3b82f6; border-color: #2563eb !important; }
+    .group-color-2 { background: #10b981; border-color: #059669 !important; }
+    .group-color-3 { background: #f59e0b; border-color: #d97706 !important; }
+    .group-color-4 { background: #ec4899; border-color: #db2777 !important; }
+    .group-color-5 { background: #8b5cf6; border-color: #7c3aed !important; }
+    .group-color-6 { background: #06b6d4; border-color: #0891b2 !important; }
+    .group-color-7 { background: #f97316; border-color: #ea580c !important; }
+    .group-color-8 { background: #14b8a6; border-color: #0d9488 !important; }
+    .group-color-9 { background: #6366f1; border-color: #4f46e5 !important; }
+    .group-color-10 { background: #84cc16; border-color: #65a30d !important; }
+    .group-color-11 { background: #e11d48; border-color: #be123c !important; }
+    .group-color-12 { background: #64748b; border-color: #475569 !important; }
+
+    /* 타이머 스타일 */
+    .timer-wrap {
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .timer-display-big {
+      font-size: clamp(48px, 8vw, 84px);
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.04em;
+      color: #0f172a;
+      line-height: 1.1;
+      margin: 12px 0 16px;
+      transition: color .2s;
+    }
+
+    .timer-display-big.warning {
+      color: #dc2626;
+      animation: timerPulse .6s infinite alternate;
+    }
+
+    @keyframes timerPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+
+    .timer-presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .timer-presets button {
+      padding: 6px 12px;
+      font-size: 13px;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    .timer-presets button:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .timer-custom-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .timer-custom-row input {
+      width: 70px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .timer-main-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 14px;
+    }
+
+    .timer-main-btns button {
+      font-size: 16px;
+      padding: 12px 24px;
+    }
+
+    /* 플로팅 미니 타이머 위젯 */
+    .mini-timer-widget {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.92);
+      color: #fff;
+      backdrop-filter: blur(10px);
+      padding: 10px 18px;
+      border-radius: 40px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      display: none;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: transform .15s ease;
+    }
+
+    .mini-timer-widget:hover {
+      transform: scale(1.04);
+    }
+
+    .mini-timer-widget.running {
+      display: flex;
+    }
+
+    .mini-timer-time {
+      font-size: 20px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 타이머 전체화면 모드 */
+    .timer-fullscreen-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #090d16;
+      color: #fff;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .timer-fullscreen-overlay.show {
+      display: flex;
+    }
+
+    .timer-fullscreen-time {
+      font-size: clamp(100px, 22vw, 260px);
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.05em;
+    }
+
+    .timer-fullscreen-time.warning {
+      color: #ef4444;
+      animation: timerPulse .5s infinite alternate;
+    }
+
+    .timer-fullscreen-controls {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .timer-fullscreen-controls button {
+      font-size: 20px;
+      padding: 14px 28px;
+      border-radius: 16px;
+    }
+
+    /* 추첨기 (Lucky Draw) 스타일 */
+    .draw-box {
+      text-align: center;
+      padding: 12px 0;
+    }
+
+    .draw-slot {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 3px solid #3b82f6;
+      border-radius: 20px;
+      padding: 24px 16px;
+      margin: 16px 0 20px;
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+      position: relative;
+      overflow: hidden;
+      min-height: 130px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .draw-name-display {
+      font-size: clamp(32px, 5.5vw, 56px);
+      font-weight: 950;
+      color: #38bdf8;
+      letter-spacing: -0.04em;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+      transition: transform 0.05s ease;
+    }
+
+    .draw-num-display {
+      font-size: clamp(16px, 2.2vw, 24px);
+      font-weight: 800;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+
+    .draw-winners-wrap {
+      margin-top: 16px;
+      text-align: left;
+    }
+
+    .draw-winner-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .draw-winner-chip {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 15px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* 컨페티(축하 색종이) 파티클 효과 */
+    .confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10000;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 모둠 구성 (Group Formation) 스타일 */
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+      max-height: 52vh;
+      overflow-y: auto;
+      padding: 4px;
+    }
+
+    .group-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 2px solid #cbd5e1;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .group-card-head {
+      padding: 10px 14px;
+      font-weight: 900;
+      font-size: 15px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .group-card-body {
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .group-member-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 8px;
+      border-radius: 8px;
+      background: #f8fafc;
+      font-size: 14px;
+    }
+
+    .group-member-name {
+      font-weight: 800;
+      color: #1e293b;
+    }
+
+    .group-member-level {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div>
+        <h1>교실 자리 배치도</h1>
+        <div class="sub">컴퓨터실 / 일반교실 선택 · 일반교실 행열 설정 · 인쇄 1페이지 맞춤</div>
+      </div>
+      <div class="actions">
+        <button onclick="openSettings('roster')">설정</button>
+        <button class="secondary" onclick="autoSelectByTime()">현재 시간표 적용</button>
+        <button class="ghost" onclick="openTimerModal()">⏱️ 타이머</button>
+        <button class="ghost" onclick="openGroupModal()">👥 모둠 구성</button>
+        <button class="ghost" onclick="openDrawModal()">🎲 학생 추첨</button>
+        <button class="ghost" onclick="openProgress()">진도 기록</button>
+        <button class="ghost" onclick="openRecords()">출결 기록</button>
+        <button class="ghost" onclick="exportAssignmentExcel()">과제 엑셀 저장</button>
+        <button class="ghost" onclick="window.print()">인쇄</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="main-board">
+      <div class="board-top">
+        <div class="board-summary">
+          <div id="currentClassTitle" class="class-title">반을 선택하세요</div>
+          <div id="currentMeta" class="class-meta">설정에서 반별 명렬표를 먼저 등록하세요.</div>
+          <div class="progress-control-row">
+            <div id="progressPreview" class="progress-preview empty">이전 수업과 오늘 수업 내용이 여기에 표시됩니다.</div>
+            <div class="mini-controls">
+              <div class="control-field">
+                <label for="dateInput">날짜</label>
+                <input id="dateInput" type="date" onchange="renderBoard()" />
+              </div>
+              <div class="control-field">
+                <label for="periodSelect">교시</label>
+                <select id="periodSelect" onchange="renderBoard()"></select>
+              </div>
+              <div class="control-field wide">
+                <label for="classSelect">수업 교체 / 반 선택</label>
+                <select id="classSelect" onchange="selectClass(this.value)"></select>
+              </div>
+            </div>
+          </div>
+          <div class="legend">
+            <span class="legend-item"><span class="legend-color" style="background:#fee2e2;border-color:#ef4444;"></span>부진</span>
+            <span class="legend-item"><span class="legend-color" style="background:#dbeafe;border-color:#3b82f6;"></span>보통</span>
+            <span class="legend-item"><span class="legend-color" style="background:#dcfce7;border-color:#22c55e;"></span>우수</span>
+            <span class="legend-item"><span class="legend-color" style="background:#fef3c7;border-color:#f59e0b;"></span>관찰</span>
+            <span class="legend-item"><span class="legend-color" style="background:#bbf7d0;border-color:#16a34a;"></span>과제 제출 체크</span>
+            <span id="groupLegendTag" class="legend-item" style="display:none;"><span class="legend-color" style="background:#3b82f6;border-color:#2563eb;"></span>모둠 표시 활성</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-bar">
+        <button id="modeStudentInfo" class="mode" onclick="setMode('studentInfo')">출결/특이사항</button>
+        <button id="modeMove" class="mode active" onclick="setMode('move')">자리 이동</button>
+        <button class="secondary" onclick="saveSeatLayout()">좌석 저장</button>
+        <button class="secondary" onclick="toggleAllAssignments()">과제 전체선택/해제</button>
+        <button class="secondary" onclick="openAssignmentReport()">과제 확인</button>
+        <button class="secondary" onclick="shuffleSeating()" title="현재 반 학생들의 자리를 무작위로 섞습니다">🎲 자리 무작위 섞기</button>
+        <button class="secondary" onclick="renumberReverseByRoster()" title="현재 반 학생들을 마지막 번호부터 역순으로 배치합니다">🔄 번호 역순 배치</button>
+        <span id="modeHelp" class="mode-help">학생 좌석을 클릭한 뒤 옮길 자리를 클릭하세요.</span>
+      </div>
+
+      <div class="seat-area">
+        <div id="frontBoard" class="front">교탁 / 전자칠판</div>
+        <div id="seatRows" class="seat-rows"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="settingsModal" class="modal-backdrop" onclick="backdropClose(event, 'settingsModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>설정</h2>
+        <button class="ghost" onclick="closeModal('settingsModal')">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="tabs">
+          <button id="tabRoster" class="tab active" onclick="showSettingsTab('roster')">명렬 / 좌석 유형</button>
+          <button id="tabTimetable" class="tab" onclick="showSettingsTab('timetable')">시간표 입력</button>
+          <button id="tabBackup" class="tab" onclick="showSettingsTab('backup')">백업 / 초기화</button>
+          <button id="tabGoogle" class="tab" onclick="showSettingsTab('google')">📊 Google 시트 동기화 (추천)</button>
+          <button id="tabGithub" class="tab" onclick="showSettingsTab('github')">GitHub 동기화</button>
+        </div>
+
+        <div id="panelRoster" class="tab-panel active">
+          <div class="grid-3">
+            <div>
+              <label for="classNameInput">반 이름</label>
+              <input id="classNameInput" placeholder="예: 1-1, 2-3, 자유학기 A반" />
+            </div>
+            <div>
+              <label for="layoutTypeInput">교실 유형</label>
+              <select id="layoutTypeInput" onchange="toggleClassroomOptions()">
+                <option value="lab">컴퓨터실 · 31번 고정</option>
+                <option value="classroom">일반 교실 · 행/열 직접 설정</option>
+              </select>
+            </div>
+            <div>
+              <label for="flipVerticalInput">상하·좌우 위치</label>
+              <select id="flipVerticalInput">
+                <option value="true">상하·좌우 뒤집기</option>
+                <option value="false">기본 방향</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="classroomOptions" class="grid-2" style="margin-top:12px; display:none;">
+            <div>
+              <label for="classroomColsInput">일반교실 열</label>
+              <input id="classroomColsInput" type="number" min="1" max="10" value="5" />
+            </div>
+            <div>
+              <label for="classroomRowsInput">일반교실 행</label>
+              <input id="classroomRowsInput" type="number" min="1" max="10" value="6" />
+            </div>
+          </div>
+
+          <label for="rosterPaste" style="margin-top:14px;">스프레드시트 명렬표 붙여넣기</label>
+          <textarea id="rosterPaste" placeholder="번호[TAB]이름 형태로 붙여넣기&#10;예:&#10;1	김가은&#10;2	박나래&#10;3	이도윤"></textarea>
+          <div class="small-text">
+            컴퓨터실은 31번 고정 좌석으로 배치됩니다. 일반교실은 입력한 열·행에 맞춰 한 칸에 한 자리씩 배치됩니다.
+          </div>
+
+          <div class="btn-row">
+            <button onclick="saveRoster()">명렬표 저장 + 번호순 배치</button>
+            <button class="secondary" onclick="renumberByRoster()">현재 반 번호순 재배치</button>
+            <button class="secondary" onclick="renumberReverseByRoster()">현재 반 번호 역순 재배치</button>
+            <button class="secondary" onclick="shuffleSeating()">현재 반 무작위 섞기</button>
+            <button class="ghost" onclick="loadCurrentClassToSettings()">현재 반 설정 불러오기</button>
+          </div>
+
+          <label style="margin-top:18px;">등록된 반</label>
+          <div class="small-text">삭제할 반을 선택한 뒤 ‘선택한 반 삭제’를 누르면 해당 반의 좌석표, 특이사항, 색상, 출결, 진도 기록이 함께 삭제됩니다.</div>
+          <div class="grid-2" style="margin-top:8px;">
+            <div>
+              <select id="deleteClassSelect"></select>
+            </div>
+            <div>
+              <button class="danger" onclick="deleteSelectedClass()">선택한 반 삭제</button>
+            </div>
+          </div>
+          <div id="classChips" class="class-chips"></div>
+        </div>
+
+        <div id="panelTimetable" class="tab-panel">
+          <h3>교시 시간 설정</h3>
+          <div id="periodEditor"></div>
+          <div class="btn-row">
+            <button class="secondary" onclick="savePeriods()">교시 시간 저장</button>
+          </div>
+
+          <h3 style="margin-top:18px;">요일별 시간표 입력</h3>
+          <div class="small-text">각 요일·교시에 수업 반을 지정하면 ‘현재 시간표 적용’ 버튼으로 해당 반 좌석표가 자동 표시됩니다.</div>
+          <div id="timetableEditor"></div>
+          <div class="btn-row">
+            <button onclick="saveTimetable()">시간표 저장</button>
+          </div>
+        </div>
+
+        <div id="panelBackup" class="tab-panel">
+          <h3>백업 / 가져오기</h3>
+          <div class="btn-row">
+            <button onclick="exportData()">전체 백업 내보내기</button>
+            <button class="danger" onclick="resetAllData()">전체 초기화</button>
+          </div>
+
+          <label for="importFile" style="margin-top:16px;">백업 파일 가져오기</label>
+          <input id="importFile" type="file" accept=".json" onchange="importData(event)" />
+          <div class="small-text">다른 컴퓨터에서 사용하려면 백업 파일을 내보낸 뒤 이곳에서 가져오면 됩니다.</div>
+        </div>
+
+        <div id="panelGithub" class="tab-panel">
+          <h3>GitHub 동기화 설정</h3>
+          <div class="small-text" style="color: #1e3a8a; background: #eff6ff; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #bfdbfe; line-height: 1.5;">
+            💡 <b>여러 기기 동기화 방법:</b> 개인 GitHub 저장소에 데이터를 암호화하여 저장합니다. 학교, 집, 모바일 어디서나 실시간으로 동일한 자리배치도를 수정하고 확인하실 수 있습니다.
+          </div>
+          <div class="grid-2">
+            <div>
+              <label for="ghEnabled">GitHub 동기화 활성화</label>
+              <select id="ghEnabled" onchange="toggleGithubSyncFields()">
+                <option value="false">비활성화</option>
+                <option value="true">활성화</option>
+              </select>
+            </div>
+            <div>
+              <label for="ghToken">GitHub Personal Access Token (PAT)</label>
+              <input id="ghToken" type="password" placeholder="ghp_..." />
+            </div>
+          </div>
+          <div class="grid-3" style="margin-top: 12px;">
+            <div>
+              <label for="ghOwner">GitHub 사용자명 (Owner)</label>
+              <input id="ghOwner" placeholder="예: edcom1004-hub" />
+            </div>
+            <div>
+              <label for="ghRepo">저장소 이름 (Repository)</label>
+              <input id="ghRepo" placeholder="예: classroom_seating" />
+            </div>
+            <div>
+              <label for="ghBranch">브랜치 이름 (Branch)</label>
+              <input id="ghBranch" placeholder="예: main" />
+            </div>
+          </div>
+          <div class="grid-2" style="margin-top: 12px;">
+            <div>
+              <label for="ghPath">저장할 파일 경로 (File Path)</label>
+              <input id="ghPath" placeholder="예: seating_data.json" />
+            </div>
+            <div>
+              <label for="ghEncrypt">보안 암호화 사용</label>
+              <select id="ghEncrypt" onchange="toggleGithubEncryptPassword()">
+                <option value="true">사용 (권한 없는 사용자 접근 불가 - 강력 추천)</option>
+                <option value="false">사용 안 함 (텍스트 그대로 저장)</option>
+              </select>
+            </div>
+          </div>
+          <div id="ghPasswordGroup" style="margin-top: 12px;">
+            <label for="ghPassword">암호화 비밀번호 (공유할 기기에서 동일하게 입력)</label>
+            <input id="ghPassword" type="password" placeholder="데이터 암호화/복호화에 사용할 비밀번호를 입력하세요." />
+            <div class="small-text" style="color: #b45309; background: #fffbeb; padding: 8px 10px; border-radius: 8px; margin-top: 6px; border: 1px solid #fde68a; line-height: 1.4;">
+              ⚠️ <b>주의:</b> 이 비밀번호는 데이터 복호화에 절대적으로 필요합니다. 분실 시 데이터를 복구할 수 없습니다. 공개 저장소를 사용 중이라면 반드시 비밀번호를 설정하여 개인정보를 보호하세요.
+            </div>
+          </div>
+          <div class="small-text" style="margin-top: 12px; line-height: 1.6;">
+            * <b>GitHub 토큰 발급법:</b> GitHub 로그인 &gt; 우측 상단 프로필 &gt; Settings &gt; Developer settings &gt; Personal access tokens &gt; Tokens (classic) &gt; Generate new token (classic) &gt; <b>repo</b> 권한 선택 후 생성 &gt; 발급된 키(ghp_...) 복사 붙여넣기
+          </div>
+          <div class="btn-row" style="margin-top: 14px;">
+            <button onclick="saveGithubSettings()">동기화 설정 저장</button>
+            <button class="secondary" onclick="pullFromGithubManual()">지금 불러오기 (Pull)</button>
+            <button class="ghost" onclick="pushToGithubManual()">지금 내보내기 (Push)</button>
+          </div>
+        </div>
+
+        <div id="panelGoogle" class="tab-panel">
+          <h3>Google 스프레드시트 (Apps Script) 동기화</h3>
+          <div class="small-text" style="color: #065f46; background: #ecfdf5; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #a7f3d0; line-height: 1.5;">
+            ✨ <b>가장 편리하고 안전한 구글 시트 연동:</b> 본인의 구글 스프레드시트와 연동하여 학교 PC, 태블릿, 모바일, 집 어디서든 데이터가 실시간으로 자동 저장되고 동기화됩니다. 토큰 발급 없이 Apps Script 웹 앱 URL만 넣으면 끝!
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label for="gsEnabled">Google 시트 동기화 활성화</label>
+              <select id="gsEnabled">
+                <option value="false">비활성화</option>
+                <option value="true">활성화 (자동 동기화)</option>
+              </select>
+            </div>
+            <div>
+              <label for="gsAutoSync">데이터 변경 시 자동 저장</label>
+              <select id="gsAutoSync">
+                <option value="true">사용 (자리/출결/과제 변경 시 자동 업로드)</option>
+                <option value="false">수동 저장만 사용</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <label for="gsWebAppUrl">Google Apps Script 웹 앱 URL</label>
+            <input id="gsWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec" />
+          </div>
+
+          <div class="btn-row" style="margin-top: 14px;">
+            <button onclick="saveGoogleSheetsSettings()">Google 시트 설정 저장</button>
+            <button class="secondary" onclick="pullFromGoogleSheetsManual()">지금 시트에서 불러오기 (Pull)</button>
+            <button class="ghost" onclick="pushToGoogleSheetsManual()">지금 시트에 내보내기 (Push)</button>
+            <button class="ghost" onclick="openGasGuideModal()">📋 Apps Script 설정 가이드 및 코드 보기</button>
+          </div>
+
+          <div style="margin-top: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; font-size: 13px; line-height: 1.6;">
+            <b>📌 3분 구글 시트 연동 초간단 순서:</b><br>
+            1. 새 구글 스프레드시트 생성<br>
+            2. 상단 메뉴 <b>[확장 프로그램] &gt; [Apps Script]</b> 클릭<br>
+            3. <b>‘📋 Apps Script 설정 가이드 및 코드 보기’</b> 버튼을 눌러 나오는 코드를 그대로 복사-붙여넣기<br>
+            4. 우측 상단 <b>[배포] &gt; [새 배포] &gt; 유형: [웹 앱]</b> 선택 (액세스 권한: <b>모든 사용자(Anyone)</b> 설정)<br>
+            5. 발급된 <b>웹 앱 URL</b>을 위의 입력란에 붙여넣고 저장!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="studentModal" class="modal-backdrop" onclick="backdropClose(event, 'studentModal')">
+    <div class="modal small">
+      <div class="modal-header">
+        <h2 id="studentModalTitle">학생 정보</h2>
+        <button class="ghost" onclick="closeModal('studentModal')">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div id="studentModalInfo" class="small-text"></div>
+
+        <div id="studentTabs" class="tabs student-tabs">
+          <button id="studentTabAttendance" class="tab active" onclick="showStudentTab('attendance')">출결</button>
+          <button id="studentTabNote" class="tab" onclick="showStudentTab('note')">특이사항 / 색상</button>
+        </div>
+
+        <div id="noteBox">
+          <label for="studentLevel">좌석 색상</label>
+          <select id="studentLevel">
+            <option value="low">부진 · 빨강</option>
+            <option value="normal">보통 · 파랑</option>
+            <option value="excellent">우수 · 초록</option>
+            <option value="observe">관찰 · 노랑</option>
+          </select>
+
+          <label for="studentNote" style="margin-top:12px;">특이사항</label>
+          <textarea id="studentNote" placeholder="예: 앞자리 선호, 기기 점검 필요, 협업 시 유의점 등"></textarea>
+          <div class="small-text">색상과 특이사항은 학생별로 저장됩니다.</div>
+          <div class="btn-row">
+            <button onclick="saveStudentNoteAndLevel()">특이사항 / 색상 저장</button>
+          </div>
+        </div>
+
+        <div id="attendanceBox">
+          <label for="attendanceStatus">출결 상태</label>
+          <select id="attendanceStatus">
+            <option value="">미입력</option>
+            <option value="지각">지각</option>
+            <option value="조퇴">조퇴</option>
+            <option value="결과">결과</option>
+            <option value="결석">결석</option>
+          </select>
+
+          <label for="attendanceAbsenceType" style="margin-top:12px;">결석 종류</label>
+          <select id="attendanceAbsenceType">
+            <option value="">해당 없음</option>
+            <option value="질병">질병</option>
+            <option value="미인정">미인정</option>
+            <option value="기타">기타</option>
+            <option value="인정">인정</option>
+          </select>
+          <div class="small-text">출결 상태가 결석인 경우 엑셀 파일의 결석 종류 칸에 표시됩니다.</div>
+
+          <label for="attendanceMemo" style="margin-top:12px;">출결 메모</label>
+          <textarea id="attendanceMemo" placeholder="예: 보건실, 공결, 상담 후 입실 등"></textarea>
+          <div class="btn-row">
+            <button onclick="saveAttendance()">출결 저장</button>
+            <button class="ghost" onclick="clearAttendance()">출결 지우기</button>
+          </div>
+        </div>
+
+        <div id="assignmentBox">
+          <label for="assignmentStatus">오늘 수업 과제 제출 여부</label>
+          <select id="assignmentStatus">
+            <option value="">미입력 · 미체크(0)</option>
+            <option value="checked">제출 · 체크(1)</option>
+            <option value="unchecked">미제출 · 미체크(0)</option>
+          </select>
+
+          <label for="assignmentMemo" style="margin-top:12px;">비고 / 미제출 사유</label>
+          <textarea id="assignmentMemo" placeholder="예: 결석, 기기 오류, 과제 미완성, 파일 제출 누락 등"></textarea>
+          <div class="small-text">좌석의 작은 체크 버튼을 눌러도 제출 여부를 빠르게 바꿀 수 있습니다.</div>
+          <div class="btn-row">
+            <button onclick="saveAssignment()">과제 저장</button>
+            <button class="ghost" onclick="clearAssignment()">과제 지우기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="recordsModal" class="modal-backdrop" onclick="backdropClose(event, 'recordsModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>출결 기록</h2>
+        <button class="ghost" onclick="closeModal('recordsModal')">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid-3">
+          <div>
+            <label for="recordClassSelect">반 선택</label>
+            <select id="recordClassSelect" onchange="renderAttendanceRecords()"></select>
+          </div>
+          <div>
+            <label for="recordDateInput">날짜 필터</label>
+            <input id="recordDateInput" type="date" onchange="renderAttendanceRecords()" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="secondary" onclick="exportAttendanceCsv()">출결 CSV 저장</button>
+            <button class="ghost" style="margin-top:6px;" onclick="exportAssignmentExcel()">과제 엑셀 저장</button>
+          </div>
+        </div>
+        <div id="attendanceRecords" class="table-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="assignmentReportModal" class="modal-backdrop" onclick="backdropClose(event, 'assignmentReportModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>과제 제출 확인</h2>
+        <button class="ghost" onclick="closeModal('assignmentReportModal')">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid-3">
+          <div>
+            <label for="assignmentReportClassSelect">반 선택</label>
+            <select id="assignmentReportClassSelect" onchange="renderAssignmentReportDateOptions(); renderAssignmentReport()"></select>
+          </div>
+          <div>
+            <label for="assignmentReportDateSelect">날짜 선택</label>
+            <select id="assignmentReportDateSelect" onchange="renderAssignmentReport()">
+              <option value="">전체 날짜</option>
+            </select>
+          </div>
+          <div class="assignment-report-search">
+            <label for="assignmentStudentSearch">학생 검색</label>
+            <input id="assignmentStudentSearch" placeholder="번호 또는 이름" oninput="renderAssignmentReport()" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <label class="assignment-missing-toggle" for="assignmentMissingOnly">
+              <input id="assignmentMissingOnly" type="checkbox" onchange="renderAssignmentReport()" />
+              미제출 학생만 보기
+            </label>
+            <div class="btn-row assignment-report-buttons">
+              <button class="secondary" onclick="exportAssignmentReportExcel()">엑셀 저장</button>
+              <button class="ghost" onclick="printAssignmentReport()">인쇄</button>
+            </div>
+          </div>
+        </div>
+        <div class="small-text">전체 날짜를 선택하면 학생별 누적 제출 현황이 하나의 표로 표시됩니다. 특정 날짜를 선택하면 기존처럼 날짜별 상세 기록을 접거나 펼쳐 확인할 수 있습니다. 체크된 학생은 1, 미체크 또는 미제출은 0으로 표시됩니다.</div>
+        <div id="assignmentReportRecords" class="table-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="progressModal" class="modal-backdrop" onclick="backdropClose(event, 'progressModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>수업 진도 기록</h2>
+        <button class="ghost" onclick="closeModal('progressModal')">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid-3">
+          <div>
+            <label for="progressClassSelect">반 선택</label>
+            <select id="progressClassSelect" onchange="loadProgressEditorForSelectedSlot(); renderProgressRecords()"></select>
+          </div>
+          <div>
+            <label for="progressDateInput">수업 날짜</label>
+            <input id="progressDateInput" type="date" onchange="loadProgressEditorForSelectedSlot()" />
+          </div>
+          <div>
+            <label for="progressPeriodSelect">교시</label>
+            <select id="progressPeriodSelect" onchange="loadProgressEditorForSelectedSlot()"></select>
+          </div>
+        </div>
+
+        <label for="progressContent" style="margin-top:14px;">오늘 수업한 내용</label>
+        <textarea id="progressContent" placeholder="예: 데이터의 표현 단원에서 아날로그와 디지털 데이터의 차이를 설명하고, 2진수 표현 활동을 진행함."></textarea>
+
+        <label for="progressNext" style="margin-top:12px;">다음 시간 이어서 할 내용 / 준비 사항</label>
+        <textarea id="progressNext" placeholder="예: 다음 시간에는 비트 수에 따른 표현 가능 개수와 문자 인코딩을 이어서 설명할 예정."></textarea>
+
+        <div class="btn-row">
+          <button onclick="saveProgress()">진도 저장</button>
+          <button class="secondary" onclick="fillProgressFromCurrent()">현재 반·날짜·교시로 입력</button>
+          <button class="ghost" onclick="exportProgressCsv()">진도 CSV 저장</button>
+        </div>
+
+        <h3 style="margin-top:20px;">반별 수업 진도 상황</h3>
+        <div class="small-text">날짜와 교시 순서로 누적 기록을 확인할 수 있습니다. 가장 최근 기록은 메인 좌석표에도 표시됩니다.</div>
+        <div id="progressRecords" class="table-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- === 타이머 모달 === -->
+  <div id="timerModal" class="modal-backdrop" onclick="backdropClose(event, 'timerModal')">
+    <div class="modal small">
+      <div class="modal-header">
+        <h2>⏱️ 수업 타이머</h2>
+        <button class="ghost" onclick="closeModal('timerModal')">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="timer-wrap">
+          <div id="timerDisplayBig" class="timer-display-big">05:00</div>
+          
+          <div class="timer-presets">
+            <button type="button" onclick="setTimerPreset(60)">1분</button>
+            <button type="button" onclick="setTimerPreset(180)">3분</button>
+            <button type="button" onclick="setTimerPreset(300)">5분</button>
+            <button type="button" onclick="setTimerPreset(600)">10분</button>
+            <button type="button" onclick="setTimerPreset(900)">15분</button>
+            <button type="button" onclick="setTimerPreset(1200)">20분</button>
+            <button type="button" onclick="setTimerPreset(1800)">30분</button>
+          </div>
+
+          <div class="timer-presets">
+            <button type="button" class="secondary" onclick="adjustTimer(30)">+30초</button>
+            <button type="button" class="secondary" onclick="adjustTimer(60)">+1분</button>
+            <button type="button" class="secondary" onclick="adjustTimer(300)">+5분</button>
+            <button type="button" class="ghost" onclick="adjustTimer(-30)">-30초</button>
+            <button type="button" class="ghost" onclick="adjustTimer(-60)">-1분</button>
+          </div>
+
+          <div class="timer-custom-row">
+            <label style="margin:0;">직접 설정:</label>
+            <input id="timerInputMin" type="number" min="0" max="99" value="5" placeholder="분" /> 분
+            <input id="timerInputSec" type="number" min="0" max="59" value="0" placeholder="초" /> 초
+            <button type="button" class="ghost" onclick="setCustomTimer()">적용</button>
+          </div>
+
+          <div class="timer-main-btns">
+            <button id="timerToggleBtn" type="button" onclick="toggleTimer()">시작</button>
+            <button type="button" class="ghost" onclick="resetTimer()">초기화</button>
+            <button type="button" class="secondary" onclick="toggleTimerFullscreen()">전체화면</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === 플로팅 미니 타이머 === -->
+  <div id="miniTimerWidget" class="mini-timer-widget" onclick="openTimerModal()" title="클릭하여 타이머 창 열기">
+    <span>⏱️</span>
+    <span id="miniTimerTime" class="mini-timer-time">00:00</span>
+    <span id="miniTimerState" style="font-size:12px;opacity:0.8;">(진행 중)</span>
+  </div>
+
+  <!-- === 타이머 전체화면 오버레이 === -->
+  <div id="timerFullscreenOverlay" class="timer-fullscreen-overlay">
+    <div style="font-size: clamp(24px, 4vw, 40px); font-weight:800; color:#94a3b8; margin-bottom:12px;" id="timerFullscreenClassTitle">수업 활동 시간</div>
+    <div id="timerFullscreenTime" class="timer-fullscreen-time">05:00</div>
+    <div class="timer-fullscreen-controls">
+      <button id="timerFsToggleBtn" onclick="toggleTimer()">일시정지</button>
+      <button class="secondary" onclick="adjustTimer(60)">+1분 추가</button>
+      <button class="ghost" onclick="resetTimer()">초기화</button>
+      <button class="danger" onclick="toggleTimerFullscreen()">전체화면 닫기 (ESC)</button>
+    </div>
+  </div>
+
+  <!-- === 학생 추첨기 (Lucky Draw) 모달 === -->
+  <div id="drawModal" class="modal-backdrop" onclick="backdropClose(event, 'drawModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🎲 학생 발표자 / 당첨자 추첨</h2>
+        <button class="ghost" onclick="closeModal('drawModal')">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="draw-box">
+          <div class="grid-3">
+            <div>
+              <label for="drawCountSelect">추첨 인원</label>
+              <select id="drawCountSelect">
+                <option value="1">1명 뽑기</option>
+                <option value="2">2명 뽑기</option>
+                <option value="3">3명 뽑기</option>
+                <option value="4">4명 뽑기</option>
+                <option value="5">5명 뽑기</option>
+              </select>
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-top:8px;">
+                <input id="drawExcludeAbsent" type="checkbox" checked style="width:auto;" />
+                오늘 결석생 제외
+              </label>
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-top:8px;">
+                <input id="drawSoundEffect" type="checkbox" checked style="width:auto;" />
+                효과음 켜기 🔔
+              </label>
+            </div>
+          </div>
+
+          <div class="draw-slot">
+            <div id="drawNumDisplay" class="draw-num-display">행운의 주인공은?</div>
+            <div id="drawNameDisplay" class="draw-name-display">🎲 추첨 대기 중</div>
+          </div>
+
+          <div class="btn-row" style="justify-content: center;">
+            <button id="startDrawBtn" style="font-size:18px; padding:14px 32px;" onclick="startDraw()">🎲 두구두구 추첨하기!</button>
+            <button class="ghost" onclick="resetDrawHistory()">당첨 기록 초기화</button>
+          </div>
+
+          <div class="draw-winners-wrap">
+            <label>오늘의 당첨자 기록</label>
+            <div id="drawWinnerChips" class="draw-winner-chips">
+              <span class="small-text">아직 추첨된 학생이 없습니다.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === 모둠 구성 (Group Formation) 모달 === -->
+  <div id="groupModal" class="modal-backdrop" onclick="backdropClose(event, 'groupModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>👥 모둠 구성 및 배정</h2>
+        <button class="ghost" onclick="closeModal('groupModal')">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid-3">
+          <div>
+            <label for="groupModeSelect">모둠 분할 기준</label>
+            <select id="groupModeSelect">
+              <option value="groupCount">모둠 개수 기준 (예: 4모둠, 6모둠...)</option>
+              <option value="memberCount">모둠당 인원 기준 (예: 4명씩, 5명씩...)</option>
+            </select>
+          </div>
+          <div>
+            <label for="groupValueInput">모둠 수 또는 인원 수</label>
+            <input id="groupValueInput" type="number" min="2" max="15" value="4" />
+          </div>
+          <div>
+            <label for="groupStrategySelect">배정 방식</label>
+            <select id="groupStrategySelect">
+              <option value="random">무작위 랜덤 배정</option>
+              <option value="levelBalanced">수준별 균등 분배 (우수/보통/부진 밸런스)</option>
+              <option value="numberOrder">출석번호 순서 배정</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btn-row" style="margin-top:14px;">
+          <button onclick="generateGroups()">모둠 자동 생성</button>
+          <button id="toggleSeatGroupBadgeBtn" class="secondary" onclick="toggleGroupSeatBadge()">좌석표에 모둠 표시 켜기</button>
+          <button class="ghost" onclick="copyGroupList()">모둠 명단 텍스트 복사</button>
+          <button class="danger" onclick="clearGroups()">모둠 초기화</button>
+        </div>
+
+        <div class="small-text" style="margin-top:10px;">
+          * ‘좌석표에 모둠 표시 켜기’를 누르면 메인 자리배치도의 각 학생 좌석에 모둠 라벨과 고유 색상 뱃지가 표시됩니다.
+        </div>
+
+        <div id="groupCardsGrid" class="group-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 컨페티 효과용 캔버스 -->
+  <canvas id="confettiCanvas" class="confetti-canvas" style="display:none;"></canvas>
+
+  <!-- === Google Apps Script 가이드 모달 === -->
+  <div id="gasGuideModal" class="modal-backdrop" onclick="backdropClose(event, 'gasGuideModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>📋 Google Apps Script 설정 코드 및 연동 가이드</h2>
+        <button class="ghost" onclick="closeModal('gasGuideModal')">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="small-text" style="line-height:1.6; margin-bottom:12px;">
+          구글 스프레드시트의 <b>[확장 프로그램] &gt; [Apps Script]</b>를 열고, 기본 코드를 모두 지운 뒤 아래의 코드를 <b>전체 복사하여 붙여넣기</b>하세요.
+        </div>
+        <textarea id="gasCodeTextarea" readonly style="font-family: Consolas, monospace; font-size: 12px; height: 260px; background: #0f172a; color: #38bdf8;"></textarea>
+        <div class="btn-row" style="margin-top:10px;">
+          <button onclick="copyGasCode()">📋 코드 전체 복사하기</button>
+          <button class="ghost" onclick="closeModal('gasGuideModal')">닫기</button>
+        </div>
+
+        <h3 style="margin-top:20px;">🚀 배포 단계 (매우 중요)</h3>
+        <ol class="small-text" style="line-height:1.7; padding-left:20px;">
+          <li>Apps Script 에디터 우측 상단의 <b>[배포] &gt; [새 배포]</b>를 클릭합니다.</li>
+          <li>왼쪽 톱니바퀴 아이콘을 눌러 유형으로 <b>[웹 앱]</b>을 선택합니다.</li>
+          <li>설정 항목을 다음과 같이 맞춥니다:
+            <ul style="margin: 4px 0 6px 16px;">
+              <li><b>설명:</b> 교실 자리배치도 연동 (자유롭게 입력)</li>
+              <li><b>다음 사용자로 실행:</b> <b>‘나’ (내 계정)</b></li>
+              <li><b>액세스 권한이 있는 사용자:</b> <b style="color:#dc2626;">‘모든 사용자’ (Anyone)</b> (※ 학교 계정이더라도 반드시 모든 사용자로 설정해야 브라우저에서 바로 연동됩니다.)</li>
+            </ul>
+          </li>
+          <li><b>[배포]</b> 버튼 클릭 &gt; 계정 액세스 승인 &gt; 생성된 <b>‘웹 앱 URL (https://script.google.com/macros/s/.../exec)’</b>을 복사하여 설정의 입력창에 붙여넣으면 완료!</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "classroom_seating_layout_v3";
+    const OLD_KEYS = ["computer_lab_seating_30_v1"];
+    const LAB_PC_COUNT = 31;
+
+    const defaultState = {
+      classes: {},
+      currentClass: "",
+      mode: "move",
+      selectedSeat: "",
+      selectedStudentNo: "",
+      periods: {
+        "1": { start: "09:00", end: "09:45" },
+        "2": { start: "09:55", end: "10:40" },
+        "3": { start: "10:50", end: "11:35" },
+        "4": { start: "11:45", end: "12:30" },
+        "5": { start: "13:30", end: "14:15" },
+        "6": { start: "14:25", end: "15:10" },
+        "7": { start: "15:20", end: "16:05" }
+      },
+      timetable: { "월": {}, "화": {}, "수": {}, "목": {}, "금": {} },
+      attendance: {},
+      assignments: {},
+      progress: {},
+      groups: {},
+      drawHistory: {},
+      googleSheetsSync: {
+        enabled: false,
+        webAppUrl: "",
+        autoSync: true
+      },
+      githubSync: {
+        enabled: false,
+        token: "",
+        owner: "",
+        repo: "classroom_seating",
+        branch: "main",
+        path: "seating_data.json",
+        encrypt: true,
+        password: ""
+      }
+    };
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        let raw = localStorage.getItem(STORAGE_KEY);
+
+        if (!raw) {
+          for (const key of OLD_KEYS) {
+            raw = localStorage.getItem(key);
+            if (raw) break;
+          }
+        }
+
+        if (!raw) return structuredClone(defaultState);
+        const saved = JSON.parse(raw);
+        const merged = {
+          ...structuredClone(defaultState),
+          ...saved,
+          periods: { ...structuredClone(defaultState.periods), ...(saved.periods || {}) },
+          timetable: { ...structuredClone(defaultState.timetable), ...(saved.timetable || {}) }
+        };
+
+        migrateState(merged);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        return merged;
+      } catch {
+        return structuredClone(defaultState);
+      }
+    }
+
+    function migrateState(target) {
+      target.progress ||= {};
+      target.assignments ||= {};
+      target.groups ||= {};
+      target.drawHistory ||= {};
+      target.googleSheetsSync ||= {
+        enabled: false,
+        webAppUrl: "",
+        autoSync: true
+      };
+      target.githubSync ||= {
+        enabled: false,
+        token: "",
+        owner: "",
+        repo: "classroom_seating",
+        branch: "main",
+        path: "seating_data.json",
+        encrypt: true,
+        password: ""
+      };
+      Object.values(target.classes || {}).forEach(cls => {
+        if (!cls.layout) {
+          cls.layout = {
+            type: "lab",
+            rows: 6,
+            cols: 5,
+            flipVertical: true
+          };
+        }
+
+        if (!cls.layout.type) cls.layout.type = "lab";
+        if (!cls.layout.rows) cls.layout.rows = 6;
+        if (!cls.layout.cols) cls.layout.cols = 5;
+        if (cls.layout.flipVertical === undefined) cls.layout.flipVertical = true;
+
+        (cls.roster || []).forEach(stu => {
+          stu.level = normalizeLevel(stu.level || "normal");
+          if (stu.note === undefined) stu.note = "";
+        });
+
+        if (!cls.seating) cls.seating = {};
+        const count = getSeatCount(cls.layout);
+        for (let i = 1; i <= count; i++) {
+          if (cls.seating[String(i)] === undefined && cls.seating[i] === undefined) {
+            cls.seating[String(i)] = "";
+          }
+        }
+      });
+
+      Object.values(target.attendance || {}).forEach(classObj => {
+        Object.values(classObj || {}).forEach(periodObj => {
+          Object.values(periodObj || {}).forEach(studentObj => {
+            Object.values(studentObj || {}).forEach(rec => {
+              if (!rec) return;
+              rec.status = normalizeAttendanceStatus(rec.status || "");
+              rec.absenceType = rec.status === "결석" ? normalizeAbsenceType(rec.absenceType || "") : "";
+            });
+          });
+        });
+      });
+
+      Object.values(target.assignments || {}).forEach(classObj => {
+        Object.values(classObj || {}).forEach(periodObj => {
+          Object.values(periodObj || {}).forEach(studentObj => {
+            Object.values(studentObj || {}).forEach(rec => {
+              if (!rec) return;
+              rec.checked = rec.checked === true || rec.submitCode === 1 || rec.submitCode === "1";
+              rec.submitCode = rec.checked ? 1 : 0;
+            });
+          });
+        });
+      });
+    }
+
+    let githubSaveTimeout = null;
+    let googleSaveTimeout = null;
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (state.githubSync && state.githubSync.enabled) {
+        clearTimeout(githubSaveTimeout);
+        githubSaveTimeout = setTimeout(pushToGithubAuto, 2000);
+      }
+      if (state.googleSheetsSync && state.googleSheetsSync.enabled && state.googleSheetsSync.autoSync !== false) {
+        clearTimeout(googleSaveTimeout);
+        googleSaveTimeout = setTimeout(pushToGoogleSheetsAuto, 2000);
+      }
+    }
+
+    function normalizeLevel(level) {
+      const map = {
+        default: "normal",
+        normal: "normal",
+        basic: "low",
+        low: "low",
+        advanced: "excellent",
+        excellent: "excellent",
+        attention: "observe",
+        observe: "observe",
+        support: "normal",
+        leader: "excellent"
+      };
+      return map[level] || "normal";
+    }
+
+    function normalizeAttendanceStatus(status) {
+      const allowed = ["지각", "조퇴", "결과", "결석"];
+      return allowed.includes(status) ? status : "";
+    }
+
+    function normalizeAbsenceType(type) {
+      const map = {
+        "질병결석": "질병",
+        "미인정결석": "미인정",
+        "기타결석": "기타",
+        "인정결석": "인정",
+        "질병": "질병",
+        "미인정": "미인정",
+        "기타": "기타",
+        "인정": "인정"
+      };
+      return map[type] || "";
+    }
+
+    function todayString() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+
+    function showToast(message) {
+      const t = document.getElementById("toast");
+      t.textContent = message;
+      t.style.display = "block";
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => t.style.display = "none", 1800);
+    }
+
+    function getClassNames() {
+      return Object.keys(state.classes).sort((a, b) => a.localeCompare(b, "ko"));
+    }
+
+    function currentClassData() {
+      return state.currentClass ? state.classes[state.currentClass] : null;
+    }
+
+    function getDefaultLayout() {
+      return {
+        type: document.getElementById("layoutTypeInput")?.value || "lab",
+        cols: clampNumber(Number(document.getElementById("classroomColsInput")?.value || 5), 1, 10),
+        rows: clampNumber(Number(document.getElementById("classroomRowsInput")?.value || 6), 1, 10),
+        flipVertical: String(document.getElementById("flipVerticalInput")?.value) === "true"
+      };
+    }
+
+    function getSeatCount(layout) {
+      if ((layout?.type || "lab") === "classroom") {
+        return clampNumber(Number(layout.cols || 5), 1, 10) * clampNumber(Number(layout.rows || 6), 1, 10);
+      }
+      return LAB_PC_COUNT;
+    }
+
+    function labRowsDefinition(flipVertical) {
+      const rows = [
+        { left: [1, 2, null], right: [3, 4, null, null], label: "통로" },
+        { left: [5, 6, 7], right: [8, 9, 10, 11], label: "" },
+        { left: [12, 13, 14], right: [15, 16, 17, 18], label: "" },
+        { left: [19, 20, 21], right: [22, 23, 24, 25], label: "" },
+        { left: [26, 27, 28], right: [29, 30, 31, null], label: "" }
+      ];
+
+      if (!flipVertical) return rows;
+
+      // 뒤쪽에서 바라보는 화면이 되므로 위아래뿐 아니라 좌우도 함께 반전합니다.
+      return rows.slice().reverse().map(row => ({
+        left: row.right.slice().reverse(),
+        right: row.left.slice().reverse(),
+        label: row.label,
+        mirrored: true
+      }));
+    }
+
+    function classroomSeatGrid(layout) {
+      const rows = clampNumber(Number(layout.rows || 6), 1, 10);
+      const cols = clampNumber(Number(layout.cols || 5), 1, 10);
+      const grid = [];
+
+      for (let r = 0; r < rows; r++) {
+        const row = [];
+        for (let c = 0; c < cols; c++) {
+          row.push(r * cols + c + 1);
+        }
+        grid.push(row);
+      }
+
+      if (!layout.flipVertical) return grid;
+
+      // 뒤집기 상태에서는 위아래와 좌우를 함께 반전합니다.
+      return grid.reverse().map(row => row.slice().reverse());
+    }
+
+    function parseRoster(text) {
+      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      const result = [];
+
+      for (const line of lines) {
+        let cells = line.split("\t").map(v => v.trim()).filter(Boolean);
+
+        if (cells.length === 1) {
+          const m = cells[0].match(/^(\d+)\s+(.+)$/);
+          if (m) cells = [m[1], m[2]];
+        }
+
+        if (cells.length < 2) continue;
+
+        const no = String(cells[0]).replace(/[^\d]/g, "");
+        const name = cells[1].trim();
+
+        if (!no || /번호|순번|학번/i.test(cells[0]) || /이름|성명/i.test(name)) continue;
+        result.push({ no, name, note: "", level: "normal" });
+      }
+
+      const map = new Map();
+      result.forEach(stu => {
+        if (!map.has(stu.no)) map.set(stu.no, stu);
+      });
+
+      return Array.from(map.values()).sort((a, b) => Number(a.no) - Number(b.no));
+    }
+
+    function makeNumberOrderSeating(roster, layout) {
+      const count = getSeatCount(layout);
+      const seating = {};
+      for (let seat = 1; seat <= count; seat++) {
+        seating[String(seat)] = roster[seat - 1] ? roster[seat - 1].no : "";
+      }
+      return seating;
+    }
+
+    function saveRoster() {
+      const className = document.getElementById("classNameInput").value.trim();
+      const text = document.getElementById("rosterPaste").value.trim();
+      const layout = getDefaultLayout();
+
+      if (!className) {
+        showToast("반 이름을 입력하세요.");
+        return;
+      }
+
+      const roster = parseRoster(text);
+      if (roster.length === 0) {
+        showToast("명렬표에서 번호와 이름을 찾지 못했습니다.");
+        return;
+      }
+
+      const seatCount = getSeatCount(layout);
+      if (roster.length > seatCount) {
+        showToast(`좌석은 ${seatCount}개까지 배치됩니다. 초과 학생은 명렬에는 저장되지만 좌석에는 표시되지 않습니다.`);
+      }
+
+      const old = state.classes[className];
+      const oldData = {};
+      if (old?.roster) {
+        old.roster.forEach(stu => {
+          oldData[stu.no] = {
+            note: stu.note || "",
+            level: normalizeLevel(stu.level || "normal")
+          };
+        });
+      }
+
+      state.classes[className] = {
+        layout,
+        roster: roster.map(stu => ({
+          ...stu,
+          note: oldData[stu.no]?.note || "",
+          level: oldData[stu.no]?.level || "normal"
+        })),
+        seating: makeNumberOrderSeating(roster, layout)
+      };
+
+      state.currentClass = className;
+      state.selectedSeat = "";
+      state.selectedStudentNo = "";
+      saveState();
+      renderAll();
+      showToast(`${className} 명렬표와 좌석 유형을 저장했습니다.`);
+    }
+
+    function renumberByRoster() {
+      const data = currentClassData();
+      if (!data) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+
+      data.layout ||= { type: "lab", rows: 6, cols: 5, flipVertical: true };
+      data.seating = makeNumberOrderSeating(data.roster, data.layout);
+      state.selectedSeat = "";
+      state.selectedStudentNo = "";
+      saveState();
+      renderAll();
+      showToast("번호순으로 다시 배치했습니다.");
+    }
+
+    function makeReverseNumberOrderSeating(roster, layout) {
+      const count = getSeatCount(layout);
+      const seating = {};
+      const sorted = (roster || []).slice().sort((a, b) => Number(a.no) - Number(b.no));
+      const reversed = sorted.reverse();
+      for (let seat = 1; seat <= count; seat++) {
+        seating[String(seat)] = reversed[seat - 1] ? reversed[seat - 1].no : "";
+      }
+      return seating;
+    }
+
+    function renumberReverseByRoster() {
+      const data = currentClassData();
+      if (!data) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+      if (!data.roster || data.roster.length === 0) {
+        showToast("배치할 학생 명렬이 없습니다.");
+        return;
+      }
+
+      data.layout ||= { type: "lab", rows: 6, cols: 5, flipVertical: true };
+      data.seating = makeReverseNumberOrderSeating(data.roster, data.layout);
+      state.selectedSeat = "";
+      state.selectedStudentNo = "";
+      saveState();
+      renderAll();
+      showToast("번호 역순으로 좌석을 다시 배치했습니다.");
+    }
+
+    function shuffleSeating() {
+      const data = currentClassData();
+      if (!data) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+      if (!data.roster || data.roster.length === 0) {
+        showToast("배치할 학생 명렬이 없습니다.");
+        return;
+      }
+      if (!confirm(`${state.currentClass} 반 학생들의 자리를 무작위로 섞을까요?`)) return;
+
+      data.layout ||= { type: "lab", rows: 6, cols: 5, flipVertical: true };
+      const count = getSeatCount(data.layout);
+      const seating = {};
+      
+      const shuffled = data.roster.slice();
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      for (let seat = 1; seat <= count; seat++) {
+        seating[String(seat)] = shuffled[seat - 1] ? shuffled[seat - 1].no : "";
+      }
+
+      data.seating = seating;
+      state.selectedSeat = "";
+      state.selectedStudentNo = "";
+      saveState();
+      renderAll();
+      showToast("🎲 좌석을 무작위로 섞었습니다!");
+    }
+
+    function loadCurrentClassToSettings() {
+      const data = currentClassData();
+      if (!data) {
+        showToast("불러올 반을 먼저 선택하세요.");
+        return;
+      }
+
+      document.getElementById("classNameInput").value = state.currentClass;
+      document.getElementById("layoutTypeInput").value = data.layout?.type || "lab";
+      document.getElementById("classroomColsInput").value = data.layout?.cols || 5;
+      document.getElementById("classroomRowsInput").value = data.layout?.rows || 6;
+      document.getElementById("flipVerticalInput").value = String(data.layout?.flipVertical ?? true);
+      document.getElementById("rosterPaste").value = (data.roster || []).map(stu => `${stu.no}\t${stu.name}`).join("\n");
+      toggleClassroomOptions();
+      showToast("현재 반 설정을 불러왔습니다.");
+    }
+
+
+
+    function deleteClassByName(className) {
+      const select = document.getElementById("deleteClassSelect");
+      if (select) select.value = className;
+      deleteSelectedClass();
+    }
+
+    function deleteSelectedClass() {
+      const select = document.getElementById("deleteClassSelect");
+      const className = select?.value || state.currentClass;
+
+      if (!className || !state.classes[className]) {
+        showToast("삭제할 반을 선택하세요.");
+        return;
+      }
+
+      const ok = confirm(`${className} 반의 좌석표, 특이사항, 색상, 출결 기록, 진도 기록을 모두 삭제할까요?`);
+      if (!ok) return;
+
+      delete state.classes[className];
+
+      // 해당 반의 출결 기록 삭제
+      Object.keys(state.attendance || {}).forEach(date => {
+        if (state.attendance[date]?.[className]) {
+          delete state.attendance[date][className];
+        }
+        if (state.attendance[date] && Object.keys(state.attendance[date]).length === 0) {
+          delete state.attendance[date];
+        }
+      });
+
+      // 해당 반의 과제 체크 기록 삭제
+      Object.keys(state.assignments || {}).forEach(date => {
+        if (state.assignments[date]?.[className]) {
+          delete state.assignments[date][className];
+        }
+        if (state.assignments[date] && Object.keys(state.assignments[date]).length === 0) {
+          delete state.assignments[date];
+        }
+      });
+
+      // 해당 반의 진도 기록 삭제
+      if (state.progress?.[className]) {
+        delete state.progress[className];
+      }
+
+      // 해당 반의 모둠 및 추첨 기록 삭제
+      if (state.groups?.[className]) {
+        delete state.groups[className];
+      }
+      if (state.drawHistory?.[className]) {
+        delete state.drawHistory[className];
+      }
+
+      // 시간표에서 해당 반 삭제
+      Object.keys(state.timetable || {}).forEach(day => {
+        Object.keys(state.timetable[day] || {}).forEach(period => {
+          if (state.timetable[day][period] === className) {
+            state.timetable[day][period] = "";
+          }
+        });
+      });
+
+      if (state.currentClass === className) {
+        const remaining = getClassNames();
+        state.currentClass = remaining[0] || "";
+      }
+
+      state.selectedSeat = "";
+      state.selectedStudentNo = "";
+
+      saveState();
+      renderAll();
+      showToast(`${className} 반을 삭제했습니다.`);
+    }
+
+    function selectClass(className) {
+      if (!className || !state.classes[className]) return;
+      state.currentClass = className;
+      state.selectedSeat = "";
+      state.selectedStudentNo = "";
+      saveState();
+      renderAll();
+    }
+
+    function normalizeModeName(mode) {
+      if (mode === "attendance" || mode === "note" || mode === "studentInfo") return "studentInfo";
+      return "move";
+    }
+
+    function setMode(mode) {
+      mode = normalizeModeName(mode);
+      state.mode = mode;
+      state.selectedSeat = "";
+      state.selectedStudentNo = "";
+      saveState();
+
+      document.getElementById("modeStudentInfo")?.classList.toggle("active", mode === "studentInfo");
+      document.getElementById("modeMove")?.classList.toggle("active", mode === "move");
+
+      const help = document.getElementById("modeHelp");
+      if (mode === "move") help.textContent = "학생 좌석을 클릭한 뒤 옮길 자리를 클릭하세요.";
+      if (mode === "studentInfo") help.textContent = "좌석을 클릭한 뒤 출결 탭 또는 특이사항 / 색상 탭에서 필요한 내용을 입력하세요.";
+
+      renderBoard();
+    }
+
+    function getStudent(no) {
+      const data = currentClassData();
+      return data?.roster.find(stu => stu.no === String(no));
+    }
+
+    function getAttendanceMap() {
+      const date = document.getElementById("dateInput").value || todayString();
+      const period = document.getElementById("periodSelect").value || "1";
+      const className = state.currentClass || "_none";
+
+      state.attendance[date] ||= {};
+      state.attendance[date][className] ||= {};
+      state.attendance[date][className][period] ||= {};
+      return state.attendance[date][className][period];
+    }
+
+    function getAssignmentMap(create = true) {
+      const date = document.getElementById("dateInput").value || todayString();
+      const period = document.getElementById("periodSelect").value || "1";
+      const className = state.currentClass || "_none";
+
+      if (!create) {
+        return state.assignments?.[date]?.[className]?.[period] || {};
+      }
+
+      state.assignments ||= {};
+      state.assignments[date] ||= {};
+      state.assignments[date][className] ||= {};
+      state.assignments[date][className][period] ||= {};
+      return state.assignments[date][className][period];
+    }
+
+    function getReadableModeName() {
+      const mode = normalizeModeName(state.mode);
+      if (mode === "studentInfo") return "출결/특이사항";
+      return "자리 이동";
+    }
+
+    function renderBoard() {
+      const box = document.getElementById("seatRows");
+      const data = currentClassData();
+
+      if (!data) {
+        document.getElementById("currentClassTitle").textContent = "반을 선택하세요";
+        document.getElementById("currentMeta").textContent = "설정 버튼을 눌러 반별 명렬표를 등록하세요.";
+        renderProgressSummary();
+        box.className = "seat-rows";
+        box.style.gridTemplateColumns = "";
+        box.style.removeProperty("grid-template-columns");
+        updateFrontPosition({ flipVertical: false });
+        box.innerHTML = `<div class="empty-box">아직 표시할 좌석표가 없습니다.<br>상단의 <b>설정</b>에서 명렬표를 등록하세요.</div>`;
+        return;
+      }
+
+      data.layout ||= { type: "lab", rows: 6, cols: 5, flipVertical: true };
+      const layout = data.layout;
+      const seatCount = getSeatCount(layout);
+      const layoutText = layout.type === "classroom"
+        ? `일반교실 ${layout.cols}열 × ${layout.rows}행`
+        : "컴퓨터실 31번 고정";
+
+      document.getElementById("currentClassTitle").textContent = state.currentClass;
+      document.getElementById("currentMeta").textContent =
+        `${data.roster.length}명 · ${layoutText} · ${layout.flipVertical ? "상하·좌우 뒤집기" : "기본 방향"} · ${getReadableModeName()} 모드`;
+
+      renderProgressSummary();
+
+      const att = getAttendanceMap();
+      const taskMap = getAssignmentMap(false);
+      const search = "";
+
+      if (layout.type === "classroom") {
+        renderClassroomBoard(box, data, att, taskMap, search);
+      } else {
+        renderLabBoard(box, data, att, taskMap, search);
+      }
+
+      updateFrontPosition(layout);
+      renderClassOptions();
+
+      const groupLegend = document.getElementById("groupLegendTag");
+      if (groupLegend) {
+        const isGroupActive = !!state.groups?.[state.currentClass]?.showOnSeats;
+        groupLegend.style.display = isGroupActive ? "inline-flex" : "none";
+      }
+    }
+
+
+    function updateFrontPosition(layout) {
+      const seatArea = document.querySelector(".seat-area");
+      const front = document.getElementById("frontBoard");
+      const rows = document.getElementById("seatRows");
+      if (!seatArea || !front || !rows) return;
+
+      const flipped = !!layout?.flipVertical;
+
+      if (flipped) {
+        seatArea.appendChild(front);
+        front.classList.add("bottom");
+      } else {
+        seatArea.insertBefore(front, rows);
+        front.classList.remove("bottom");
+      }
+    }
+
+    function renderLabBoard(box, data, att, taskMap, search) {
+      // 일반교실 화면에서 적용된 인라인 열 설정이 남아 있으면
+      // 컴퓨터실 행 전체가 한 줄처럼 눌려 보이므로 반드시 초기화합니다.
+      box.className = "seat-rows";
+      box.style.gridTemplateColumns = "";
+      box.style.removeProperty("grid-template-columns");
+
+      const rows = labRowsDefinition(data.layout?.flipVertical ?? true);
+
+      box.innerHTML = rows.map(row => `
+        <div class="lab-row ${row.mirrored ? "mirrored" : ""}">
+          ${row.left.map(seat => renderSeatSlot(seat, data, att, taskMap, search)).join("")}
+          <div class="aisle">${row.label || ""}</div>
+          ${row.right.map(seat => renderSeatSlot(seat, data, att, taskMap, search)).join("")}
+        </div>
+      `).join("");
+    }
+
+    function renderClassroomBoard(box, data, att, taskMap, search) {
+      const layout = data.layout;
+      const rows = classroomSeatGrid(layout);
+      const cols = clampNumber(Number(layout.cols || 5), 1, 10);
+
+      box.className = "seat-rows classroom-grid";
+      box.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+      box.innerHTML = rows.flat().map(seat => renderSeatSlot(seat, data, att, taskMap, search)).join("");
+    }
+
+    function renderSeatSlot(seatNo, data, attMap, taskMap, search) {
+      if (seatNo === null) {
+        return `<div class="seat blank-seat"><div class="empty-name">빈 자리</div></div>`;
+      }
+      return renderSeat(seatNo, data, attMap, taskMap, search);
+    }
+
+    function getStudentGroupInfo(className, studentNo) {
+      if (!className || !studentNo || !state.groups?.[className]?.showOnSeats) return null;
+      const list = state.groups[className].list || [];
+      for (let i = 0; i < list.length; i++) {
+        const grp = list[i];
+        if ((grp.members || []).some(m => String(m.no) === String(studentNo))) {
+          return { index: i + 1, name: grp.name || `${i + 1}모둠` };
+        }
+      }
+      return null;
+    }
+
+    function renderSeat(seatNo, data, attMap, taskMap, search) {
+      const key = String(seatNo);
+      const studentNo = data.seating?.[key] || data.seating?.[seatNo] || "";
+      const student = studentNo ? data.roster.find(stu => stu.no === String(studentNo)) : null;
+      const record = student ? attMap[student.no] : null;
+      const status = record?.status || "";
+      const taskRecord = student ? taskMap[student.no] : null;
+      const taskChecked = taskRecord?.checked === true || taskRecord?.submitCode === 1 || taskRecord?.submitCode === "1";
+      const hasNote = !!student?.note?.trim();
+      const selected = state.selectedSeat === key;
+      const level = normalizeLevel(student?.level || "normal");
+      const groupInfo = student ? getStudentGroupInfo(state.currentClass, student.no) : null;
+
+      let visible = true;
+      if (search && student) visible = student.no.includes(search) || student.name.includes(search);
+      if (search && !student) visible = false;
+
+      const style = search && !visible ? "opacity:.22;" : "";
+      const cls = [
+        "seat",
+        student ? `level-${level}` : "empty-seat",
+        selected ? "selected" : "",
+        status ? `att-${status}` : "",
+        taskChecked ? "task-checked" : "",
+        groupInfo ? `group-active` : ""
+      ].join(" ");
+
+      return `
+        <div class="${cls}" style="${style}" onclick="handleSeatClick('${seatNo}')">
+          <div class="pc-no">${seatNo}</div>
+          ${status ? `<div class="att-badge">${escapeHtml(status)}</div>` : ""}
+          ${student ? `<button class="task-check ${taskChecked ? "checked" : ""}" onclick="toggleAssignmentFromSeat(event, '${escapeJs(student.no)}')" title="과제 제출 체크">${taskChecked ? "✓" : ""}</button>` : ""}
+          ${student ? `
+            <div class="student-line">
+              <span class="student-num">${escapeHtml(student.no)}</span>
+              <span class="student-name">${escapeHtml(student.name)}</span>
+            </div>
+            ${hasNote ? `<span class="note-dot"></span><div class="tooltip">${escapeHtml(student.note)}</div>` : ""}
+            ${groupInfo ? `<span class="group-badge group-color-${((groupInfo.index - 1) % 12) + 1}">${escapeHtml(groupInfo.name)}</span>` : ""}
+          ` : `<div class="empty-name">빈 자리</div>`}
+        </div>
+      `;
+    }
+
+    function handleSeatClick(seatNo) {
+      const data = currentClassData();
+      if (!data) return;
+
+      const key = String(seatNo);
+      const studentNo = data.seating?.[key] || "";
+
+      if (state.mode === "move") {
+        if (!state.selectedSeat) {
+          if (!studentNo) {
+            showToast("이동할 학생이 있는 좌석을 먼저 클릭하세요.");
+            return;
+          }
+          state.selectedSeat = key;
+          state.selectedStudentNo = studentNo;
+          saveState();
+          renderBoard();
+          showToast("옮길 자리를 클릭하세요.");
+          return;
+        }
+
+        if (state.selectedSeat === key) {
+          state.selectedSeat = "";
+          state.selectedStudentNo = "";
+          saveState();
+          renderBoard();
+          return;
+        }
+
+        const from = state.selectedSeat;
+        const to = key;
+        const fromStudent = data.seating[from] || "";
+        const toStudent = data.seating[to] || "";
+
+        data.seating[to] = fromStudent;
+        data.seating[from] = toStudent;
+
+        state.selectedSeat = "";
+        state.selectedStudentNo = "";
+        saveState();
+        renderAll();
+        showToast("자리를 이동했습니다.");
+        return;
+      }
+
+      if (!studentNo) {
+        showToast("빈 자리입니다.");
+        return;
+      }
+
+      state.selectedSeat = key;
+      state.selectedStudentNo = studentNo;
+      saveState();
+      openStudentModal(studentNo);
+      renderBoard();
+    }
+
+    function openStudentModal(studentNo) {
+      const student = getStudent(studentNo);
+      if (!student) return;
+
+      document.getElementById("studentModalTitle").textContent = `${student.no}번 ${student.name}`;
+      document.getElementById("studentModalInfo").innerHTML =
+        `${escapeHtml(state.currentClass)} · 좌석 ${escapeHtml(state.selectedSeat)}번 · ${escapeHtml(document.getElementById("dateInput").value || todayString())} · ${escapeHtml(document.getElementById("periodSelect").value || "1")}교시`;
+
+      document.getElementById("studentLevel").value = normalizeLevel(student.level || "normal");
+      document.getElementById("studentNote").value = student.note || "";
+
+      const att = getAttendanceMap()[student.no] || { status: "", memo: "", absenceType: "" };
+      document.getElementById("attendanceStatus").value = normalizeAttendanceStatus(att.status || "");
+      document.getElementById("attendanceAbsenceType").value = normalizeAbsenceType(att.absenceType || "");
+      document.getElementById("attendanceMemo").value = att.memo || "";
+
+      const assignment = getAssignmentMap(false)[student.no] || {};
+      const assignmentChecked = assignment.checked === true || assignment.submitCode === 1 || assignment.submitCode === "1";
+      document.getElementById("assignmentStatus").value = assignmentChecked ? "checked" : assignment.checked === false || assignment.submitCode === 0 || assignment.submitCode === "0" ? "unchecked" : "";
+      document.getElementById("assignmentMemo").value = assignment.memo || "";
+
+      document.getElementById("studentTabs").style.display = "flex";
+      document.getElementById("assignmentBox").style.display = "none";
+      showStudentTab("attendance");
+
+      openModal("studentModal");
+    }
+
+    function showStudentTab(tab) {
+      const isAttendance = tab === "attendance";
+      document.getElementById("studentTabAttendance")?.classList.toggle("active", isAttendance);
+      document.getElementById("studentTabNote")?.classList.toggle("active", !isAttendance);
+      document.getElementById("attendanceBox").style.display = isAttendance ? "block" : "none";
+      document.getElementById("noteBox").style.display = isAttendance ? "none" : "block";
+      document.getElementById("assignmentBox").style.display = "none";
+    }
+
+    function saveStudentNoteAndLevel() {
+      const student = getStudent(state.selectedStudentNo);
+      if (!student) {
+        showToast("학생을 먼저 선택하세요.");
+        return;
+      }
+      student.note = document.getElementById("studentNote").value.trim();
+      student.level = normalizeLevel(document.getElementById("studentLevel").value || "normal");
+      saveState();
+      renderBoard();
+      showToast("특이사항과 색상을 저장했습니다.");
+    }
+
+    function saveAttendance() {
+      const student = getStudent(state.selectedStudentNo);
+      if (!student) {
+        showToast("학생을 먼저 선택하세요.");
+        return;
+      }
+
+      const status = normalizeAttendanceStatus(document.getElementById("attendanceStatus").value);
+      const absenceType = status === "결석"
+        ? normalizeAbsenceType(document.getElementById("attendanceAbsenceType").value)
+        : "";
+
+      getAttendanceMap()[student.no] = {
+        name: student.name,
+        status,
+        absenceType,
+        memo: document.getElementById("attendanceMemo").value.trim(),
+        savedAt: new Date().toISOString()
+      };
+
+      saveState();
+      renderBoard();
+      renderAttendanceRecords();
+      showToast("출결을 저장했습니다.");
+    }
+
+    function clearAttendance() {
+      if (!state.selectedStudentNo) {
+        showToast("학생을 먼저 선택하세요.");
+        return;
+      }
+      delete getAttendanceMap()[state.selectedStudentNo];
+      document.getElementById("attendanceStatus").value = "";
+      document.getElementById("attendanceAbsenceType").value = "";
+      document.getElementById("attendanceMemo").value = "";
+      saveState();
+      renderBoard();
+      renderAttendanceRecords();
+      showToast("출결 입력을 지웠습니다.");
+    }
+
+    function saveAssignment() {
+      const student = getStudent(state.selectedStudentNo);
+      if (!student) {
+        showToast("학생을 먼저 선택하세요.");
+        return;
+      }
+
+      const value = document.getElementById("assignmentStatus").value;
+      const memo = document.getElementById("assignmentMemo").value.trim();
+      const map = getAssignmentMap(true);
+
+      if (!value && !memo) {
+        delete map[student.no];
+      } else {
+        const checked = value === "checked";
+        map[student.no] = {
+          name: student.name,
+          checked,
+          submitCode: checked ? 1 : 0,
+          memo,
+          savedAt: new Date().toISOString()
+        };
+      }
+
+      saveState();
+      renderBoard();
+      showToast(value === "checked" ? "과제 제출을 체크했습니다.(1)" : "과제 미제출/미체크 상태로 저장했습니다.(0)");
+    }
+
+    function clearAssignment() {
+      if (!state.selectedStudentNo) {
+        showToast("학생을 먼저 선택하세요.");
+        return;
+      }
+
+      delete getAssignmentMap(true)[state.selectedStudentNo];
+      document.getElementById("assignmentStatus").value = "";
+      document.getElementById("assignmentMemo").value = "";
+      saveState();
+      renderBoard();
+      showToast("과제 체크를 지웠습니다.");
+    }
+
+    function toggleAssignmentFromSeat(event, studentNo) {
+      event.stopPropagation();
+      event.preventDefault();
+
+      const student = getStudent(studentNo);
+      if (!student) return;
+
+      const map = getAssignmentMap(true);
+      const current = map[student.no] || {};
+      const nextChecked = current.checked !== true;
+      map[student.no] = {
+        name: student.name,
+        checked: nextChecked,
+        submitCode: nextChecked ? 1 : 0,
+        memo: current.memo || "",
+        savedAt: new Date().toISOString()
+      };
+
+      saveState();
+      renderBoard();
+      showToast(nextChecked ? `${student.no}번 ${student.name} 제출 체크(1)` : `${student.no}번 ${student.name} 미체크(0)`);
+    }
+
+    function toggleAllAssignments() {
+      const data = currentClassData();
+      if (!data) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+
+      const roster = data.roster || [];
+      if (roster.length === 0) {
+        showToast("체크할 학생 명렬이 없습니다.");
+        return;
+      }
+
+      const map = getAssignmentMap(false);
+      const allChecked = roster.every(stu => {
+        const rec = map[stu.no] || {};
+        return rec.checked === true || rec.submitCode === 1 || rec.submitCode === "1";
+      });
+
+      markAllAssignments(!allChecked);
+    }
+
+    function markAllAssignments(checked = true) {
+      const data = currentClassData();
+      if (!data) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+
+      const map = getAssignmentMap(true);
+      const savedAt = new Date().toISOString();
+
+      (data.roster || []).forEach(stu => {
+        const current = map[stu.no] || {};
+        map[stu.no] = {
+          name: stu.name,
+          checked,
+          submitCode: checked ? 1 : 0,
+          memo: current.memo || "",
+          savedAt
+        };
+      });
+
+      saveState();
+      renderBoard();
+      showToast(checked ? `${state.currentClass} 과제 제출을 전체선택했습니다.(1)` : `${state.currentClass} 과제 체크를 전체해제했습니다.(0)`);
+    }
+
+    function saveSeatLayout() {
+      saveState();
+      showToast("좌석 배치를 저장했습니다.");
+    }
+
+    function renderPeriods() {
+      const keys = Object.keys(state.periods).sort((a, b) => Number(a) - Number(b));
+      const periodSelect = document.getElementById("periodSelect");
+      const previousPeriod = periodSelect?.value || keys[0] || "1";
+      periodSelect.innerHTML = keys.map(p => `<option value="${p}">${p}교시</option>`).join("");
+      if (keys.includes(previousPeriod)) periodSelect.value = previousPeriod;
+
+      const progressPeriodSelect = document.getElementById("progressPeriodSelect");
+      const previousProgressPeriod = progressPeriodSelect?.value || previousPeriod;
+      if (progressPeriodSelect) {
+        progressPeriodSelect.innerHTML = keys.map(p => `<option value="${p}">${p}교시</option>`).join("");
+        if (keys.includes(previousProgressPeriod)) progressPeriodSelect.value = previousProgressPeriod;
+      }
+
+      document.getElementById("periodEditor").innerHTML = keys.map(p => `
+        <div class="period-row">
+          <b>${p}교시</b>
+          <input type="time" id="period_${p}_start" value="${escapeAttr(state.periods[p].start)}">
+          <input type="time" id="period_${p}_end" value="${escapeAttr(state.periods[p].end)}">
+        </div>
+      `).join("");
+    }
+
+    function savePeriods() {
+      Object.keys(state.periods).forEach(p => {
+        const s = document.getElementById(`period_${p}_start`);
+        const e = document.getElementById(`period_${p}_end`);
+        if (s && e) {
+          state.periods[p].start = s.value;
+          state.periods[p].end = e.value;
+        }
+      });
+      saveState();
+      showToast("교시 시간을 저장했습니다.");
+    }
+
+    function renderTimetable() {
+      const days = ["월", "화", "수", "목", "금"];
+      const periods = Object.keys(state.periods).sort((a, b) => Number(a) - Number(b));
+      const classes = getClassNames();
+
+      let html = `<div class="timetable-grid"><div></div>${days.map(d => `<div class="tt-head day">${d}</div>`).join("")}`;
+      for (const p of periods) {
+        html += `<div class="tt-head">${p}교시</div>`;
+        for (const d of days) {
+          const value = state.timetable[d]?.[p] || "";
+          html += `<select id="tt_${d}_${p}">
+            <option value="">없음</option>
+            ${classes.map(c => `<option value="${escapeAttr(c)}" ${value === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
+          </select>`;
+        }
+      }
+      html += `</div>`;
+      document.getElementById("timetableEditor").innerHTML = html;
+    }
+
+    function saveTimetable() {
+      const days = ["월", "화", "수", "목", "금"];
+      Object.keys(state.periods).forEach(p => {
+        days.forEach(d => {
+          state.timetable[d] ||= {};
+          const el = document.getElementById(`tt_${d}_${p}`);
+          state.timetable[d][p] = el ? el.value : "";
+        });
+      });
+      saveState();
+      showToast("시간표를 저장했습니다.");
+    }
+
+    function autoSelectByTime() {
+      const now = new Date();
+      const dayMap = ["일", "월", "화", "수", "목", "금", "토"];
+      const today = dayMap[now.getDay()];
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+
+      if (!["월", "화", "수", "목", "금"].includes(today)) {
+        showToast("오늘은 평일 시간표 범위가 아닙니다.");
+        return;
+      }
+
+      let matched = "";
+      for (const [p, t] of Object.entries(state.periods)) {
+        const [sh, sm] = t.start.split(":").map(Number);
+        const [eh, em] = t.end.split(":").map(Number);
+        const start = sh * 60 + sm;
+        const end = eh * 60 + em;
+        if (nowMin >= start && nowMin <= end) {
+          matched = p;
+          break;
+        }
+      }
+
+      if (!matched) {
+        showToast("현재 시간이 설정된 교시 범위에 없습니다.");
+        return;
+      }
+
+      document.getElementById("periodSelect").value = matched;
+      const className = state.timetable[today]?.[matched] || "";
+
+      if (!className) {
+        showToast(`${today}요일 ${matched}교시에 등록된 반이 없습니다.`);
+        renderBoard();
+        return;
+      }
+
+      selectClass(className);
+      document.getElementById("periodSelect").value = matched;
+      renderBoard();
+      showToast(`${today}요일 ${matched}교시 ${className} 좌석표를 표시했습니다.`);
+    }
+
+    function renderClassOptions() {
+      const names = getClassNames();
+      const options = `<option value="">반 선택</option>` + names.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join("");
+
+      document.getElementById("classSelect").innerHTML = options;
+      document.getElementById("recordClassSelect").innerHTML = options;
+      const progressClassSelect = document.getElementById("progressClassSelect");
+      const deleteClassSelect = document.getElementById("deleteClassSelect");
+      const assignmentReportClassSelect = document.getElementById("assignmentReportClassSelect");
+      if (progressClassSelect) progressClassSelect.innerHTML = options;
+      if (deleteClassSelect) deleteClassSelect.innerHTML = options;
+      if (assignmentReportClassSelect) assignmentReportClassSelect.innerHTML = options;
+
+      if (state.currentClass) {
+        document.getElementById("classSelect").value = state.currentClass;
+        document.getElementById("recordClassSelect").value = state.currentClass;
+        if (progressClassSelect) progressClassSelect.value = state.currentClass;
+        if (deleteClassSelect) deleteClassSelect.value = state.currentClass;
+        if (assignmentReportClassSelect) assignmentReportClassSelect.value = state.currentClass;
+      }
+
+      document.getElementById("classChips").innerHTML = names.length
+        ? names.map(c => `
+          <span class="chip-wrap">
+            <button class="chip ${state.currentClass === c ? "active" : ""}" onclick="selectClass('${escapeJs(c)}')">${escapeHtml(c)}</button>
+            <button class="chip-delete" title="삭제" onclick="deleteClassByName('${escapeJs(c)}')">×</button>
+          </span>
+        `).join("")
+        : `<span class="small-text">아직 등록된 반이 없습니다.</span>`;
+    }
+
+    function renderAttendanceRecords() {
+      const targetClass = document.getElementById("recordClassSelect").value || state.currentClass;
+      const targetDate = document.getElementById("recordDateInput").value;
+      const box = document.getElementById("attendanceRecords");
+
+      if (!targetClass) {
+        box.innerHTML = `<div class="empty-box">반을 선택하세요.</div>`;
+        return;
+      }
+
+      const rows = [];
+      for (const [date, classObj] of Object.entries(state.attendance || {})) {
+        if (targetDate && date !== targetDate) continue;
+        const periodObj = classObj[targetClass] || {};
+        for (const [period, studentObj] of Object.entries(periodObj)) {
+          for (const [no, rec] of Object.entries(studentObj)) {
+            const status = normalizeAttendanceStatus(rec.status || "");
+            const absenceType = status === "결석" ? normalizeAbsenceType(rec.absenceType || "") : "";
+            if (!status && !rec.memo && !absenceType) continue;
+            rows.push({ date, period, no, name: rec.name || "", status, absenceType, memo: rec.memo || "" });
+          }
+        }
+      }
+
+      rows.sort((a,b) => a.date.localeCompare(b.date) || Number(a.period) - Number(b.period) || Number(a.no) - Number(b.no));
+
+      if (rows.length === 0) {
+        box.innerHTML = `<div class="empty-box">저장된 출결 기록이 없습니다.</div>`;
+        return;
+      }
+
+      box.innerHTML = `<table>
+        <thead><tr><th>날짜</th><th>교시</th><th>번호</th><th>이름</th><th>상태</th><th>결석 종류</th><th>메모</th></tr></thead>
+        <tbody>${rows.map(r => `<tr>
+          <td>${escapeHtml(r.date)}</td>
+          <td>${escapeHtml(r.period)}교시</td>
+          <td>${escapeHtml(r.no)}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.status)}</td>
+          <td>${escapeHtml(r.absenceType)}</td>
+          <td>${escapeHtml(r.memo)}</td>
+        </tr>`).join("")}</tbody>
+      </table>`;
+    }
+
+
+    function getProgressList(className) {
+      state.progress ||= {};
+      state.progress[className] ||= [];
+      return state.progress[className];
+    }
+
+    function progressSortValue(record) {
+      const period = String(record.period || "0").padStart(2, "0");
+      return `${record.date || ""} ${period} ${record.savedAt || ""}`;
+    }
+
+    function getLatestProgress(className) {
+      if (!className || !state.progress?.[className]) return null;
+      const records = state.progress[className]
+        .filter(r => r && (r.content || r.next))
+        .slice()
+        .sort((a, b) => progressSortValue(b).localeCompare(progressSortValue(a)));
+      return records[0] || null;
+    }
+
+    function progressChronoValue(record) {
+      const period = String(record.period || "0").padStart(2, "0");
+      return `${record.date || ""} ${period}`;
+    }
+
+    function getPreviousProgress(className, date, period) {
+      if (!className || !state.progress?.[className]) return null;
+
+      const currentValue = progressChronoValue({ date, period });
+      const records = state.progress[className]
+        .filter(r => r && (r.content || r.next))
+        .filter(r => progressChronoValue(r) < currentValue)
+        .slice()
+        .sort((a, b) => progressSortValue(b).localeCompare(progressSortValue(a)));
+
+      return records[0] || null;
+    }
+
+    function renderProgressSummary() {
+      const box = document.getElementById("progressPreview");
+      if (!box) return;
+
+      const className = state.currentClass;
+      const date = document.getElementById("dateInput")?.value || todayString();
+      const period = document.getElementById("periodSelect")?.value || "1";
+
+      if (!className || !state.classes[className]) {
+        box.className = "progress-preview empty";
+        box.innerHTML = "이전 수업과 오늘 수업 내용이 여기에 표시됩니다.";
+        return;
+      }
+
+      const previous = getPreviousProgress(className, date, period);
+      if (!previous) {
+        box.className = "progress-preview empty";
+        box.innerHTML = `<b>${escapeHtml(className)}</b>의 현재 날짜·교시 이전 수업 진도 기록이 없습니다. 수업 후 ‘진도 기록’에서 오늘 수업 내용과 다음 시간 내용을 저장하세요.`;
+        return;
+      }
+
+      box.className = "progress-preview";
+      const previousLesson = previous.content || "내용 없음";
+      const todayLesson = previous.next || "이전 수업에서 입력한 다음 시간 이어서 할 내용 / 준비사항이 없습니다.";
+      box.innerHTML = `
+        <span class="progress-date">${escapeHtml(previous.date || "")} · ${escapeHtml(previous.period || "")}교시 기록 기준</span>
+        <div><b>이전 수업:</b> ${escapeHtml(previousLesson)}</div>
+        <div><b>오늘 수업:</b> ${escapeHtml(todayLesson)}</div>
+      `;
+    }
+
+    function loadProgressEditorForSelectedSlot() {
+      const className = document.getElementById("progressClassSelect")?.value || state.currentClass;
+      const date = document.getElementById("progressDateInput")?.value || todayString();
+      const period = document.getElementById("progressPeriodSelect")?.value || "1";
+
+      const existing = (state.progress?.[className] || [])
+        .find(r => r.date === date && String(r.period) === String(period));
+
+      document.getElementById("progressContent").value = existing?.content || "";
+      document.getElementById("progressNext").value = existing?.next || "";
+    }
+
+    function fillProgressFromCurrent() {
+      const classSelect = document.getElementById("progressClassSelect");
+      const dateInput = document.getElementById("progressDateInput");
+      const periodSelect = document.getElementById("progressPeriodSelect");
+
+      if (classSelect) classSelect.value = state.currentClass || "";
+      if (dateInput) dateInput.value = document.getElementById("dateInput").value || todayString();
+      if (periodSelect) periodSelect.value = document.getElementById("periodSelect").value || "1";
+
+      loadProgressEditorForSelectedSlot();
+      renderProgressRecords();
+      showToast("현재 반·날짜·교시를 불러왔습니다.");
+    }
+
+    function openProgress() {
+      renderClassOptions();
+      renderPeriods();
+      fillProgressFromCurrent();
+      renderProgressRecords();
+      openModal("progressModal");
+    }
+
+    function saveProgress() {
+      const className = document.getElementById("progressClassSelect").value || state.currentClass;
+      const date = document.getElementById("progressDateInput").value || todayString();
+      const period = document.getElementById("progressPeriodSelect").value || "1";
+      const content = document.getElementById("progressContent").value.trim();
+      const next = document.getElementById("progressNext").value.trim();
+
+      if (!className) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+
+      if (!content && !next) {
+        showToast("수업 내용이나 다음 시간 내용을 입력하세요.");
+        return;
+      }
+
+      const list = getProgressList(className);
+      const existing = list.find(r => r.date === date && String(r.period) === String(period));
+
+      if (existing) {
+        existing.content = content;
+        existing.next = next;
+        existing.savedAt = new Date().toISOString();
+      } else {
+        list.push({
+          date,
+          period,
+          content,
+          next,
+          savedAt: new Date().toISOString()
+        });
+      }
+
+      saveState();
+      renderProgressRecords();
+      renderProgressSummary();
+      showToast("수업 진도를 저장했습니다.");
+    }
+
+    function renderProgressRecords() {
+      const box = document.getElementById("progressRecords");
+      if (!box) return;
+
+      const className = document.getElementById("progressClassSelect")?.value || state.currentClass;
+      if (!className) {
+        box.innerHTML = `<div class="empty-box">반을 선택하세요.</div>`;
+        return;
+      }
+
+      const records = (state.progress?.[className] || [])
+        .filter(r => r && (r.content || r.next))
+        .slice()
+        .sort((a, b) => progressSortValue(b).localeCompare(progressSortValue(a)));
+
+      if (records.length === 0) {
+        box.innerHTML = `<div class="empty-box">저장된 수업 진도 기록이 없습니다.</div>`;
+        return;
+      }
+
+      box.innerHTML = `<table>
+        <thead>
+          <tr>
+            <th>날짜</th>
+            <th>교시</th>
+            <th>오늘 수업한 내용</th>
+            <th>다음 시간 / 준비 사항</th>
+            <th>저장 시각</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${records.map(r => `<tr>
+            <td>${escapeHtml(r.date || "")}</td>
+            <td>${escapeHtml(r.period || "")}교시</td>
+            <td>${escapeHtml(r.content || "")}</td>
+            <td>${escapeHtml(r.next || "")}</td>
+            <td>${formatSavedAt(r.savedAt)}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>`;
+    }
+
+    function exportProgressCsv() {
+      const className = document.getElementById("progressClassSelect")?.value || state.currentClass;
+      if (!className) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+
+      const records = (state.progress?.[className] || [])
+        .filter(r => r && (r.content || r.next))
+        .slice()
+        .sort((a, b) => progressSortValue(a).localeCompare(progressSortValue(b)));
+
+      if (records.length === 0) {
+        showToast("내보낼 진도 기록이 없습니다.");
+        return;
+      }
+
+      const rows = [["반", "날짜", "교시", "오늘 수업한 내용", "다음 시간 / 준비 사항", "저장 시각"]];
+      records.forEach(r => {
+        rows.push([className, r.date || "", `${r.period || ""}교시`, r.content || "", r.next || "", formatSavedAt(r.savedAt)]);
+      });
+
+      const csv = rows.map(row => row.map(v => `"${String(v).replaceAll('"', '""')}"`).join(",")).join("\n");
+      downloadTextFile(csv, `${className}_수업진도기록.csv`, "text/csv;charset=utf-8");
+    }
+
+    function formatSavedAt(value) {
+      if (!value) return "";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return "";
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    }
+
+    function openRecords() {
+      renderAttendanceRecords();
+      openModal("recordsModal");
+    }
+
+    function exportAttendanceCsv() {
+      const targetClass = document.getElementById("recordClassSelect").value || state.currentClass;
+      if (!targetClass) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+
+      const rows = [["반", "날짜", "교시", "번호", "이름", "상태", "결석 종류", "메모"]];
+      for (const [date, classObj] of Object.entries(state.attendance || {})) {
+        const periodObj = classObj[targetClass] || {};
+        for (const [period, studentObj] of Object.entries(periodObj)) {
+          for (const [no, rec] of Object.entries(studentObj)) {
+            const status = normalizeAttendanceStatus(rec.status || "");
+            const absenceType = status === "결석" ? normalizeAbsenceType(rec.absenceType || "") : "";
+            if (!status && !rec.memo && !absenceType) continue;
+            rows.push([targetClass, date, `${period}교시`, no, rec.name || "", status, absenceType, rec.memo || ""]);
+          }
+        }
+      }
+
+      if (rows.length === 1) {
+        showToast("내보낼 출결 기록이 없습니다.");
+        return;
+      }
+
+      const csv = rows.map(row => row.map(v => `"${String(v).replaceAll('"', '""')}"`).join(",")).join("\n");
+      downloadTextFile(csv, `${targetClass}_출결기록.csv`, "text/csv;charset=utf-8");
+    }
+
+
+    function openAssignmentReport() {
+      renderClassOptions();
+      const classSelect = document.getElementById("assignmentReportClassSelect");
+      if (classSelect && state.currentClass) classSelect.value = state.currentClass;
+      renderAssignmentReportDateOptions();
+      renderAssignmentReport();
+      openModal("assignmentReportModal");
+    }
+
+    function getAssignmentSlots(className) {
+      const slots = [];
+      for (const [date, classObj] of Object.entries(state.assignments || {})) {
+        const periodObj = classObj?.[className] || {};
+        for (const period of Object.keys(periodObj)) {
+          slots.push({ date, period });
+        }
+      }
+      return slots.sort((a, b) => a.date.localeCompare(b.date) || Number(a.period) - Number(b.period));
+    }
+
+    function renderAssignmentReportDateOptions() {
+      const dateSelect = document.getElementById("assignmentReportDateSelect");
+      if (!dateSelect) return;
+
+      const className = document.getElementById("assignmentReportClassSelect")?.value || state.currentClass;
+      const previous = dateSelect.value;
+      const dates = Array.from(new Set(getAssignmentSlots(className).map(slot => slot.date))).sort((a, b) => a.localeCompare(b));
+
+      dateSelect.innerHTML = `<option value="">전체 날짜</option>` +
+        dates.map(date => `<option value="${escapeAttr(date)}">${escapeHtml(date)}</option>`).join("");
+
+      if (dates.includes(previous)) dateSelect.value = previous;
+      else dateSelect.value = "";
+    }
+
+    function studentMatchesSearch(stu, searchText = "") {
+      const q = String(searchText || "").trim();
+      if (!q) return true;
+      return String(stu.no || "").includes(q) || String(stu.name || "").includes(q);
+    }
+
+    function getAssignmentReportRows(className, dateFilter = "", missingOnly = false, searchText = "") {
+      const data = state.classes?.[className];
+      if (!className || !data) return [];
+
+      const roster = (data.roster || [])
+        .filter(stu => studentMatchesSearch(stu, searchText))
+        .slice()
+        .sort((a, b) => Number(a.no) - Number(b.no));
+      const slots = getAssignmentSlots(className).filter(slot => !dateFilter || slot.date === dateFilter);
+      const rows = [];
+
+      slots.forEach(slot => {
+        const assignmentMap = state.assignments?.[slot.date]?.[className]?.[slot.period] || {};
+        const attendanceMap = state.attendance?.[slot.date]?.[className]?.[slot.period] || {};
+
+        roster.forEach(stu => {
+          const task = assignmentMap[stu.no] || {};
+          const att = attendanceMap[stu.no] || {};
+          const checked = task.checked === true || task.submitCode === 1 || task.submitCode === "1";
+          if (missingOnly && checked) return;
+
+          const status = normalizeAttendanceStatus(att.status || "");
+          const absenceType = status === "결석" ? normalizeAbsenceType(att.absenceType || "") : "";
+
+          rows.push({
+            className,
+            date: slot.date,
+            period: slot.period,
+            no: stu.no,
+            name: stu.name,
+            code: checked ? "1" : "0",
+            submitLabel: checked ? "제출" : "미제출",
+            memo: task.memo || "",
+            status,
+            absenceType,
+            attendanceMemo: att.memo || ""
+          });
+        });
+      });
+
+      return rows;
+    }
+
+    function getAssignmentOverviewData(className, missingOnly = false, searchText = "") {
+      const data = state.classes?.[className];
+      if (!className || !data) return { slots: [], rows: [] };
+
+      const slots = getAssignmentSlots(className);
+      const roster = (data.roster || [])
+        .filter(stu => studentMatchesSearch(stu, searchText))
+        .slice()
+        .sort((a, b) => Number(a.no) - Number(b.no));
+
+      const rows = roster.map(stu => {
+        const cells = slots.map(slot => {
+          const task = state.assignments?.[slot.date]?.[className]?.[slot.period]?.[stu.no] || {};
+          const checked = task.checked === true || task.submitCode === 1 || task.submitCode === "1";
+          return {
+            date: slot.date,
+            period: slot.period,
+            code: checked ? "1" : "0",
+            submitLabel: checked ? "제출" : "미제출"
+          };
+        });
+        const submittedCount = cells.filter(cell => cell.code === "1").length;
+        const missingCount = cells.length - submittedCount;
+        return {
+          className,
+          no: stu.no,
+          name: stu.name,
+          cells,
+          submittedCount,
+          missingCount,
+          total: cells.length
+        };
+      }).filter(row => !missingOnly || row.missingCount > 0);
+
+      return { slots, rows };
+    }
+
+    function renderAssignmentOverviewTable(className, missingOnly, searchText) {
+      const overview = getAssignmentOverviewData(className, missingOnly, searchText);
+      if (overview.slots.length === 0) {
+        return `<div class="empty-box">저장된 과제 제출 기록이 없습니다.<br>좌석표에서 과제를 체크하거나 과제 전체선택/해제를 먼저 사용하세요.</div>`;
+      }
+      if (overview.rows.length === 0) {
+        return `<div class="empty-box">${missingOnly ? "조건에 맞는 미제출 학생이 없습니다." : "검색 조건에 맞는 학생이 없습니다."}</div>`;
+      }
+
+      const totals = overview.slots.map(slot => {
+        let submitted = 0;
+        overview.rows.forEach(row => {
+          const cell = row.cells.find(item => item.date === slot.date && item.period === slot.period);
+          if (cell?.code === "1") submitted += 1;
+        });
+        return { submitted, missing: overview.rows.length - submitted };
+      });
+
+      return `<table class="assignment-overview-table">
+        <thead>
+          <tr>
+            <th>번호</th>
+            <th>이름</th>
+            ${overview.slots.map(slot => `<th class="date-col">${escapeHtml(slot.date)}<br>${escapeHtml(slot.period)}교시</th>`).join("")}
+            <th>제출</th>
+            <th>미제출</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${overview.rows.map(row => `<tr class="${row.missingCount > 0 ? "assignment-missing-row" : ""}">
+            <td>${escapeHtml(row.no)}</td>
+            <td>${escapeHtml(row.name)}</td>
+            ${row.cells.map(cell => `<td class="date-cell ${cell.code === "1" ? "submit-ok" : "submit-no"}" title="${escapeAttr(cell.submitLabel)}">${cell.code}</td>`).join("")}
+            <td class="submit-ok">${row.submittedCount}</td>
+            <td class="${row.missingCount > 0 ? "submit-no" : ""}">${row.missingCount}</td>
+          </tr>`).join("")}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="2">제출/미제출 합계</th>
+            ${totals.map(total => `<th>제출 ${total.submitted}<br>미제출 ${total.missing}</th>`).join("")}
+            <th colspan="2">총 ${overview.rows.length}명</th>
+          </tr>
+        </tfoot>
+      </table>`;
+    }
+
+    function renderAssignmentReport() {
+      const box = document.getElementById("assignmentReportRecords");
+      if (!box) return;
+
+      const className = document.getElementById("assignmentReportClassSelect")?.value || state.currentClass;
+      const dateFilter = document.getElementById("assignmentReportDateSelect")?.value || "";
+      const missingOnly = document.getElementById("assignmentMissingOnly")?.checked === true;
+      const searchText = document.getElementById("assignmentStudentSearch")?.value || "";
+
+      if (!className) {
+        box.innerHTML = `<div class="empty-box">반을 선택하세요.</div>`;
+        return;
+      }
+
+      if (!dateFilter) {
+        box.innerHTML = renderAssignmentOverviewTable(className, missingOnly, searchText);
+        return;
+      }
+
+      const rows = getAssignmentReportRows(className, dateFilter, missingOnly, searchText);
+      if (rows.length === 0) {
+        box.innerHTML = `<div class="empty-box">${missingOnly ? "조건에 맞는 미제출 기록이 없습니다." : "저장된 과제 제출 기록이 없습니다."}<br>좌석표에서 과제를 체크하거나 과제 전체선택/해제를 먼저 사용하세요.</div>`;
+        return;
+      }
+
+      const grouped = rows.reduce((acc, row) => {
+        acc[row.date] ||= [];
+        acc[row.date].push(row);
+        return acc;
+      }, {});
+
+      const dateSections = Object.keys(grouped).sort((a, b) => a.localeCompare(b)).map((date, index) => {
+        const dateRows = grouped[date].sort((a, b) => Number(a.period) - Number(b.period) || Number(a.no) - Number(b.no));
+        const total = dateRows.length;
+        const submitted = dateRows.filter(row => row.code === "1").length;
+        const missing = total - submitted;
+        const openAttr = dateFilter || index === 0 ? " open" : "";
+
+        return `<details class="assignment-date-group"${openAttr}>
+          <summary>
+            <span>${escapeHtml(date)}</span>
+            <span class="assignment-date-summary">제출 ${submitted}명 · 미제출 ${missing}명 · 총 ${total}건</span>
+          </summary>
+          <div class="assignment-date-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>교시</th>
+                  <th>번호</th>
+                  <th>이름</th>
+                  <th>체크여부</th>
+                  <th>제출상태</th>
+                  <th>비고</th>
+                  <th>출결상태</th>
+                  <th>결석종류</th>
+                  <th>출결메모</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${dateRows.map(row => `<tr class="${row.code === "0" ? "assignment-missing-row" : ""}">
+                  <td>${escapeHtml(row.period)}교시</td>
+                  <td>${escapeHtml(row.no)}</td>
+                  <td>${escapeHtml(row.name)}</td>
+                  <td class="${row.code === "1" ? "submit-ok" : "submit-no"}">${row.code}</td>
+                  <td class="${row.code === "1" ? "submit-ok" : "submit-no"}">${escapeHtml(row.submitLabel)}</td>
+                  <td class="memo-cell">${escapeHtml(row.memo)}</td>
+                  <td>${escapeHtml(row.status)}</td>
+                  <td>${escapeHtml(row.absenceType)}</td>
+                  <td class="attendance-memo-cell">${escapeHtml(row.attendanceMemo)}</td>
+                </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+        </details>`;
+      }).join("");
+
+      box.innerHTML = dateSections;
+    }
+
+    function buildAssignmentReportHtml(className, dateFilter = "", missingOnly = false, searchText = "") {
+      const title = `${className || ""} 과제 제출 현황${dateFilter ? ` - ${dateFilter}` : " - 전체 날짜"}${missingOnly ? " - 미제출 학생" : ""}${searchText ? ` - 검색: ${searchText}` : ""}`;
+      const generatedAt = formatSavedAt(new Date().toISOString());
+      const overview = !dateFilter ? getAssignmentOverviewData(className, missingOnly, searchText) : null;
+      const rows = dateFilter ? getAssignmentReportRows(className, dateFilter, missingOnly, searchText) : overview.rows;
+
+      const bodyHtml = !dateFilter
+        ? buildAssignmentOverviewHtmlForExport(className, overview)
+        : buildAssignmentDetailHtmlForExport(rows);
+
+      return {
+        rows,
+        html: `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    body { font-family: "Malgun Gothic", Arial, sans-serif; color: #111827; }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    h2 { font-size: 16px; margin: 18px 0 8px; }
+    .meta { font-size: 13px; color: #475569; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+    th, td { border: 1px solid #999; padding: 6px 8px; text-align: center; mso-number-format:'\@'; }
+    th { background: #f1f5f9; font-weight: bold; }
+    td.memo { text-align: left; }
+    .ok { color: #166534; font-weight: bold; }
+    .no { color: #991b1b; font-weight: bold; }
+    tr.missing td { background: #fff7ed; }
+    @media print { @page { size: A4 landscape; margin: 10mm; } }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(title)}</h1>
+  <div class="meta">생성 시각: ${escapeHtml(generatedAt)} · 체크여부 1=제출, 0=미제출/미체크${missingOnly ? " · 미제출 학생만 표시" : ""}${searchText ? ` · 검색어: ${escapeHtml(searchText)}` : ""}</div>
+  ${bodyHtml}
+</body>
+</html>`
+      };
+    }
+
+    function buildAssignmentOverviewHtmlForExport(className, overview) {
+      if (!overview || overview.slots.length === 0 || overview.rows.length === 0) {
+        return `<p>표시할 과제 제출 기록이 없습니다.</p>`;
+      }
+
+      const totals = overview.slots.map(slot => {
+        let submitted = 0;
+        overview.rows.forEach(row => {
+          const cell = row.cells.find(item => item.date === slot.date && item.period === slot.period);
+          if (cell?.code === "1") submitted += 1;
+        });
+        return { submitted, missing: overview.rows.length - submitted };
+      });
+
+      return `<table>
+        <thead>
+          <tr>
+            <th>반</th>
+            <th>번호</th>
+            <th>이름</th>
+            ${overview.slots.map(slot => `<th>${escapeHtml(slot.date)}<br>${escapeHtml(slot.period)}교시</th>`).join("")}
+            <th>제출</th>
+            <th>미제출</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${overview.rows.map(row => `<tr class="${row.missingCount > 0 ? "missing" : ""}">
+            <td>${escapeHtml(className)}</td>
+            <td>${escapeHtml(row.no)}</td>
+            <td>${escapeHtml(row.name)}</td>
+            ${row.cells.map(cell => `<td class="${cell.code === "1" ? "ok" : "no"}">${cell.code}</td>`).join("")}
+            <td class="ok">${row.submittedCount}</td>
+            <td class="${row.missingCount > 0 ? "no" : ""}">${row.missingCount}</td>
+          </tr>`).join("")}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="3">제출/미제출 합계</th>
+            ${totals.map(total => `<th>제출 ${total.submitted}<br>미제출 ${total.missing}</th>`).join("")}
+            <th colspan="2">총 ${overview.rows.length}명</th>
+          </tr>
+        </tfoot>
+      </table>`;
+    }
+
+    function buildAssignmentDetailHtmlForExport(rows) {
+      const grouped = rows.reduce((acc, row) => {
+        acc[row.date] ||= [];
+        acc[row.date].push(row);
+        return acc;
+      }, {});
+      const dateKeys = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+      return dateKeys.map(date => {
+        const dateRows = grouped[date].sort((a, b) => Number(a.period) - Number(b.period) || Number(a.no) - Number(b.no));
+        const submitted = dateRows.filter(row => row.code === "1").length;
+        const missing = dateRows.length - submitted;
+        return `<h2>${escapeHtml(date)} <span style="font-size:12px;color:#475569;">제출 ${submitted}명 · 미제출 ${missing}명 · 총 ${dateRows.length}건</span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th>반</th>
+        <th>날짜</th>
+        <th>교시</th>
+        <th>번호</th>
+        <th>이름</th>
+        <th>체크여부</th>
+        <th>제출상태</th>
+        <th>비고</th>
+        <th>출결상태</th>
+        <th>결석종류</th>
+        <th>출결메모</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${dateRows.map(row => `<tr class="${row.code === "0" ? "missing" : ""}">
+        <td>${escapeHtml(row.className)}</td>
+        <td>${escapeHtml(row.date)}</td>
+        <td>${escapeHtml(row.period)}교시</td>
+        <td>${escapeHtml(row.no)}</td>
+        <td>${escapeHtml(row.name)}</td>
+        <td class="${row.code === "1" ? "ok" : "no"}">${row.code}</td>
+        <td class="${row.code === "1" ? "ok" : "no"}">${escapeHtml(row.submitLabel)}</td>
+        <td class="memo">${escapeHtml(row.memo)}</td>
+        <td>${escapeHtml(row.status)}</td>
+        <td>${escapeHtml(row.absenceType)}</td>
+        <td class="memo">${escapeHtml(row.attendanceMemo)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+      }).join("");
+    }
+
+    function safeFilename(value) {
+      return String(value || "").replace(/[\/:*?"<>|]/g, "_");
+    }
+
+    function exportAssignmentReportExcel() {
+      const className = document.getElementById("assignmentReportClassSelect")?.value || state.currentClass;
+      const dateFilter = document.getElementById("assignmentReportDateSelect")?.value || "";
+      const missingOnly = document.getElementById("assignmentMissingOnly")?.checked === true;
+      const searchText = document.getElementById("assignmentStudentSearch")?.value || "";
+
+      if (!className) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+
+      const report = buildAssignmentReportHtml(className, dateFilter, missingOnly, searchText);
+      if (report.rows.length === 0) {
+        showToast("내보낼 과제 제출 기록이 없습니다.");
+        return;
+      }
+
+      const dateText = dateFilter || "전체날짜";
+      const filterText = missingOnly ? "_미제출학생" : "";
+      downloadTextFile(report.html, `${safeFilename(className)}_${safeFilename(dateText)}_과제제출전체현황${filterText}.xls`, "application/vnd.ms-excel;charset=utf-8");
+      showToast("과제 제출 전체 현황 엑셀 파일을 저장했습니다.");
+    }
+
+    function printAssignmentReport() {
+      const className = document.getElementById("assignmentReportClassSelect")?.value || state.currentClass;
+      const dateFilter = document.getElementById("assignmentReportDateSelect")?.value || "";
+      const missingOnly = document.getElementById("assignmentMissingOnly")?.checked === true;
+      const searchText = document.getElementById("assignmentStudentSearch")?.value || "";
+
+      if (!className) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+
+      const report = buildAssignmentReportHtml(className, dateFilter, missingOnly, searchText);
+      if (report.rows.length === 0) {
+        showToast("인쇄할 과제 제출 기록이 없습니다.");
+        return;
+      }
+
+      const win = window.open("", "_blank", "width=1100,height=800");
+      if (!win) {
+        showToast("인쇄 창을 열 수 없습니다. 브라우저의 팝업 차단 설정을 확인하세요.");
+        return;
+      }
+      win.document.open();
+      win.document.write(report.html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 250);
+    }
+
+    function exportAssignmentExcel() {
+      const targetClass = state.currentClass;
+      const date = document.getElementById("dateInput").value || todayString();
+      const period = document.getElementById("periodSelect").value || "1";
+      const data = currentClassData();
+
+      if (!targetClass || !data) {
+        showToast("반을 먼저 선택하세요.");
+        return;
+      }
+
+      const assignmentMap = state.assignments?.[date]?.[targetClass]?.[period] || {};
+      const attendanceMap = state.attendance?.[date]?.[targetClass]?.[period] || {};
+      const rows = [["반", "날짜", "교시", "번호", "이름", "체크여부", "제출상태", "비고", "출결상태", "결석종류", "출결메모"]];
+
+      (data.roster || [])
+        .slice()
+        .sort((a, b) => Number(a.no) - Number(b.no))
+        .forEach(stu => {
+          const task = assignmentMap[stu.no] || {};
+          const att = attendanceMap[stu.no] || {};
+          const checked = task.checked === true || task.submitCode === 1 || task.submitCode === "1";
+          const code = checked ? "1" : "0";
+          const submitLabel = checked ? "제출" : "미제출";
+          const status = normalizeAttendanceStatus(att.status || "");
+          const absenceType = status === "결석" ? normalizeAbsenceType(att.absenceType || "") : "";
+          rows.push([
+            targetClass,
+            date,
+            `${period}교시`,
+            stu.no,
+            stu.name,
+            code,
+            submitLabel,
+            task.memo || "",
+            status,
+            absenceType,
+            att.memo || ""
+          ]);
+        });
+
+      const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    table { border-collapse: collapse; }
+    th, td { border: 1px solid #999; padding: 6px 8px; mso-number-format:'\@'; }
+    th { background: #f1f5f9; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <table>
+    <thead>${rows.slice(0, 1).map(row => `<tr>${row.map(cell => `<th>${escapeHtml(cell)}</th>`).join("")}</tr>`).join("")}</thead>
+    <tbody>${rows.slice(1).map(row => `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table>
+</body>
+</html>`;
+
+      downloadTextFile(html, `${targetClass}_${date}_${period}교시_과제제출현황.xls`, "application/vnd.ms-excel;charset=utf-8");
+      showToast("과제 제출 현황 엑셀 파일을 저장했습니다.");
+    }
+
+    function exportData() {
+      const backup = structuredClone(state);
+      if (backup.githubSync) {
+        backup.githubSync.token = "";
+        backup.githubSync.password = "";
+      }
+      downloadTextFile(JSON.stringify(backup, null, 2), `자리배치도_백업_${todayString()}.json`, "application/json;charset=utf-8");
+    }
+
+    // --- Web Crypto API Encryption/Decryption ---
+    async function encryptText(text, password) {
+      try {
+        const enc = new TextEncoder();
+        const salt = window.crypto.getRandomValues(new Uint8Array(16));
+        const pbkdf2Key = await window.crypto.subtle.importKey(
+          "raw",
+          enc.encode(password),
+          { name: "PBKDF2" },
+          false,
+          ["deriveKey"]
+        );
+        const key = await window.crypto.subtle.deriveKey(
+          {
+            name: "PBKDF2",
+            salt: salt,
+            iterations: 100000,
+            hash: "SHA-256"
+          },
+          pbkdf2Key,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt"]
+        );
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const encrypted = await window.crypto.subtle.encrypt(
+          {
+            name: "AES-GCM",
+            iv: iv
+          },
+          key,
+          enc.encode(text)
+        );
+
+        const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
+        combined.set(salt, 0);
+        combined.set(iv, salt.length);
+        combined.set(new Uint8Array(encrypted), salt.length + iv.length);
+
+        let binary = "";
+        const len = combined.byteLength;
+        for (let i = 0; i < len; i++) {
+          binary += String.fromCharCode(combined[i]);
+        }
+        return btoa(binary);
+      } catch (err) {
+        console.error("Encryption failed:", err);
+        throw new Error("암호화에 실패했습니다.");
+      }
+    }
+
+    async function decryptText(base64Str, password) {
+      try {
+        const binary = atob(base64Str);
+        const len = binary.length;
+        const combined = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          combined[i] = binary.charCodeAt(i);
+        }
+
+        const salt = combined.slice(0, 16);
+        const iv = combined.slice(16, 28);
+        const ciphertext = combined.slice(28);
+
+        const enc = new TextEncoder();
+        const pbkdf2Key = await window.crypto.subtle.importKey(
+          "raw",
+          enc.encode(password),
+          { name: "PBKDF2" },
+          false,
+          ["deriveKey"]
+        );
+        const key = await window.crypto.subtle.deriveKey(
+          {
+            name: "PBKDF2",
+            salt: salt,
+            iterations: 100000,
+            hash: "SHA-256"
+          },
+          pbkdf2Key,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["decrypt"]
+        );
+
+        const decrypted = await window.crypto.subtle.decrypt(
+          {
+            name: "AES-GCM",
+            iv: iv
+          },
+          key,
+          ciphertext
+        );
+
+        const dec = new TextDecoder();
+        return dec.decode(decrypted);
+      } catch (err) {
+        console.error("Decryption failed:", err);
+        throw new Error("복호화에 실패했습니다. 비밀번호가 틀렸거나 파일이 손상되었습니다.");
+      }
+    }
+
+    // --- GitHub REST API Synchronization ---
+    async function saveGithubSettings() {
+      const enabled = document.getElementById("ghEnabled").value === "true";
+      const token = document.getElementById("ghToken").value.trim();
+      const owner = document.getElementById("ghOwner").value.trim();
+      const repo = document.getElementById("ghRepo").value.trim() || "classroom_seating";
+      const branch = document.getElementById("ghBranch").value.trim() || "main";
+      const path = document.getElementById("ghPath").value.trim() || "seating_data.json";
+      const encrypt = document.getElementById("ghEncrypt").value === "true";
+      const password = document.getElementById("ghPassword").value;
+
+      if (enabled) {
+        if (!token) {
+          showToast("GitHub Personal Access Token을 입력해야 합니다.");
+          return;
+        }
+        if (!owner) {
+          showToast("GitHub 사용자명(Owner)을 입력해야 합니다.");
+          return;
+        }
+        if (encrypt && !password) {
+          showToast("암호화 비밀번호를 입력해야 합니다.");
+          return;
+        }
+      }
+
+      state.githubSync = {
+        enabled,
+        token,
+        owner,
+        repo,
+        branch,
+        path,
+        encrypt,
+        password
+      };
+
+      saveState();
+      showToast("GitHub 동기화 설정을 저장했습니다.");
+      
+      if (enabled) {
+        await pullFromGithub(false); // Check and pull data immediately
+      }
+    }
+
+    async function pullFromGithub(silent = false) {
+      const sync = state.githubSync;
+      if (!sync || !sync.enabled || !sync.token || !sync.owner || !sync.repo) {
+        if (!silent) showToast("GitHub 동기화 설정이 미흡하거나 비활성화되어 있습니다.");
+        return;
+      }
+
+      if (!silent) showToast("GitHub에서 데이터를 불러오는 중...");
+
+      const url = `https://api.github.com/repos/${sync.owner}/${sync.repo}/contents/${sync.path}?ref=${sync.branch}`;
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "Authorization": `token ${sync.token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Cache-Control": "no-cache"
+          }
+        });
+
+        if (res.status === 404) {
+          if (!silent) showToast("GitHub에 저장된 데이터 파일이 없습니다. 첫 저장(Push)을 완료하면 파일이 생성됩니다.");
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error(`GitHub API 호출 실패 (상태 코드: ${res.status})`);
+        }
+
+        const fileData = await res.json();
+        const base64Content = fileData.content.replace(/\s/g, "");
+        let jsonContent = "";
+
+        if (sync.encrypt) {
+          if (!sync.password) {
+            throw new Error("암호화된 데이터를 읽으려면 암호화 비밀번호가 설정되어야 합니다.");
+          }
+          const parsedWrapper = JSON.parse(decodeUtf8Base64(base64Content));
+          if (!parsedWrapper.encrypted) {
+            throw new Error("암호화된 데이터 형식이 아닙니다. 비밀번호가 없거나 설정 오류일 수 있습니다.");
+          }
+          jsonContent = await decryptText(parsedWrapper.encrypted, sync.password);
+        } else {
+          jsonContent = decodeUtf8Base64(base64Content);
+        }
+
+        const parsed = JSON.parse(jsonContent);
+        const localSync = { ...state.githubSync };
+        
+        state = {
+          ...state,
+          ...parsed,
+          githubSync: localSync
+        };
+        
+        migrateState(state);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        showToast("GitHub에서 데이터를 성공적으로 불러왔습니다.");
+        renderAll();
+      } catch (err) {
+        console.error(err);
+        showToast(`불러오기 실패: ${err.message}`);
+      }
+    }
+
+    async function pushToGithub(silent = false) {
+      const sync = state.githubSync;
+      if (!sync || !sync.enabled || !sync.token || !sync.owner || !sync.repo) {
+        if (!silent) showToast("GitHub 동기화 설정이 비활성화되어 있습니다.");
+        return;
+      }
+
+      if (!silent) showToast("GitHub에 데이터를 업로드하는 중...");
+
+      const url = `https://api.github.com/repos/${sync.owner}/${sync.repo}/contents/${sync.path}`;
+      const headers = {
+        "Authorization": `token ${sync.token}`,
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json"
+      };
+
+      try {
+        let sha = null;
+        const getRes = await fetch(`${url}?ref=${sync.branch}`, {
+          headers: {
+            "Authorization": `token ${sync.token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Cache-Control": "no-cache"
+          }
+        });
+        if (getRes.ok) {
+          const getData = await getRes.json();
+          sha = getData.sha;
+        }
+
+        const cleanState = structuredClone(state);
+        if (cleanState.githubSync) {
+          cleanState.githubSync.token = "";
+          cleanState.githubSync.password = "";
+        }
+
+        const jsonStr = JSON.stringify(cleanState, null, 2);
+        let finalContent = "";
+
+        if (sync.encrypt) {
+          if (!sync.password) {
+            throw new Error("암호화를 위해 비밀번호를 설정해야 합니다.");
+          }
+          const encryptedStr = await encryptText(jsonStr, sync.password);
+          finalContent = JSON.stringify({ encrypted: encryptedStr }, null, 2);
+        } else {
+          finalContent = jsonStr;
+        }
+
+        const b64Content = encodeUtf8Base64(finalContent);
+
+        const body = {
+          message: "교실 자리배치도 자동 동기화",
+          content: b64Content,
+          branch: sync.branch
+        };
+        if (sha) {
+          body.sha = sha;
+        }
+
+        const putRes = await fetch(url, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(body)
+        });
+
+        if (!putRes.ok) {
+          throw new Error(`저장 실패 (상태 코드: ${putRes.status})`);
+        }
+
+        if (!silent) showToast("GitHub에 데이터를 안전하게 내보냈습니다.");
+      } catch (err) {
+        console.error(err);
+        showToast(`업로드 실패: ${err.message}`);
+      }
+    }
+
+    async function pushToGithubAuto() {
+      await pushToGithub(true);
+    }
+
+    async function pullFromGithubManual() {
+      await pullFromGithub(false);
+    }
+
+    async function pushToGithubManual() {
+      await pushToGithub(false);
+    }
+
+    function loadGithubSettingsToUI() {
+      const sync = state.githubSync || {};
+      const ghEnabled = document.getElementById("ghEnabled");
+      const ghToken = document.getElementById("ghToken");
+      const ghOwner = document.getElementById("ghOwner");
+      const ghRepo = document.getElementById("ghRepo");
+      const ghBranch = document.getElementById("ghBranch");
+      const ghPath = document.getElementById("ghPath");
+      const ghEncrypt = document.getElementById("ghEncrypt");
+      const ghPassword = document.getElementById("ghPassword");
+
+      if (ghEnabled) ghEnabled.value = String(sync.enabled ?? false);
+      if (ghToken) ghToken.value = sync.token || "";
+      if (ghOwner) ghOwner.value = sync.owner || "";
+      if (ghRepo) ghRepo.value = sync.repo || "classroom_seating";
+      if (ghBranch) ghBranch.value = sync.branch || "main";
+      if (ghPath) ghPath.value = sync.path || "seating_data.json";
+      if (ghEncrypt) ghEncrypt.value = String(sync.encrypt ?? true);
+      if (ghPassword) ghPassword.value = sync.password || "";
+      
+      toggleGithubSyncFields();
+    }
+
+    function toggleGithubSyncFields() {
+      const ghEnabled = document.getElementById("ghEnabled");
+      if (!ghEnabled) return;
+      toggleGithubEncryptPassword();
+    }
+
+    function toggleGithubEncryptPassword() {
+      const ghEncrypt = document.getElementById("ghEncrypt");
+      const ghPasswordGroup = document.getElementById("ghPasswordGroup");
+      if (!ghEncrypt || !ghPasswordGroup) return;
+      const encrypt = ghEncrypt.value === "true";
+      ghPasswordGroup.style.display = encrypt ? "block" : "none";
+    }
+
+    // === Google Apps Script (Google Sheets) Synchronization ===
+    const GAS_CODE_TEMPLATE = `/**
+ * [교실 자리배치도 - Google 스프레드시트 연동 Apps Script]
+ * 
+ * 1. 이 코드를 복사하여 스프레드시트의 Apps Script 에디터에 붙여넣으세요.
+ * 2. 우측 상단 [배포] > [새 배포] > 유형: [웹 앱] 선택
+ * 3. 다음 사용자로 실행: '나(내 계정)'
+ * 4. 액세스 권한: '모든 사용자(Anyone)' 선택 후 [배포]
+ * 5. 발급된 웹 앱 URL을 자리배치도 설정에 붙여넣으세요!
+ */
+
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName("SeatingData");
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "empty", message: "저장된 데이터가 없습니다." }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    const dataCell = sheet.getRange(1, 1).getValue();
+    if (!dataCell) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "empty" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", data: JSON.parse(dataCell) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doPost(e) {
+  try {
+    const contents = e.postData.contents;
+    const payload = JSON.parse(contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 1. JSON 원본 전체 저장 시트
+    let sheet = ss.getSheetByName("SeatingData");
+    if (!sheet) {
+      sheet = ss.insertSheet("SeatingData");
+    }
+    sheet.getRange(1, 1).setValue(JSON.stringify(payload));
+    
+    // 2. 가독성을 위한 출결 시트 자동 정리
+    updateReadableSheets(ss, payload);
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "성공적으로 저장되었습니다." }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function updateReadableSheets(ss, payload) {
+  try {
+    let summarySheet = ss.getSheetByName("반별명렬");
+    if (!summarySheet) summarySheet = ss.insertSheet("반별명렬");
+    summarySheet.clear();
+    
+    const rows = [["반 이름", "출석번호", "이름", "특이사항", "수준"]];
+    const classes = payload.classes || {};
+    for (const [clsName, clsData] of Object.entries(classes)) {
+      (clsData.roster || []).forEach(stu => {
+        rows.push([clsName, stu.no, stu.name, stu.note || "", stu.level || "normal"]);
+      });
+    }
+    if (rows.length > 1) {
+      summarySheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+      summarySheet.getRange(1, 1, 1, rows[0].length).setBackground("#e2e8f0").setFontWeight("bold");
+    }
+  } catch(e) {}
+}
+`;
+
+    function openGasGuideModal() {
+      const ta = document.getElementById("gasCodeTextarea");
+      if (ta) ta.value = GAS_CODE_TEMPLATE;
+      openModal("gasGuideModal");
+    }
+
+    function copyGasCode() {
+      const ta = document.getElementById("gasCodeTextarea");
+      if (!ta) return;
+      navigator.clipboard.writeText(ta.value).then(() => {
+        showToast("📋 Apps Script 코드를 복사했습니다! 스프레드시트에 붙여넣으세요.");
+      }).catch(() => {
+        showToast("복사에 실패했습니다. 직접 선택하여 복사하세요.");
+      });
+    }
+
+    function saveGoogleSheetsSettings() {
+      const enabled = document.getElementById("gsEnabled").value === "true";
+      const webAppUrl = document.getElementById("gsWebAppUrl").value.trim();
+      const autoSync = document.getElementById("gsAutoSync").value === "true";
+
+      if (enabled && !webAppUrl) {
+        showToast("Google Apps Script 웹 앱 URL을 입력하세요.");
+        return;
+      }
+
+      state.googleSheetsSync = {
+        enabled,
+        webAppUrl,
+        autoSync
+      };
+
+      saveState();
+      showToast("Google 시트 동기화 설정을 저장했습니다.");
+
+      if (enabled) {
+        pullFromGoogleSheets(false);
+      }
+    }
+
+    function loadGoogleSheetsSettingsToUI() {
+      const sync = state.googleSheetsSync || {};
+      const gsEnabled = document.getElementById("gsEnabled");
+      const gsWebAppUrl = document.getElementById("gsWebAppUrl");
+      const gsAutoSync = document.getElementById("gsAutoSync");
+
+      if (gsEnabled) gsEnabled.value = String(sync.enabled ?? false);
+      if (gsWebAppUrl) gsWebAppUrl.value = sync.webAppUrl || "";
+      if (gsAutoSync) gsAutoSync.value = String(sync.autoSync ?? true);
+    }
+
+    async function pullFromGoogleSheets(silent = false) {
+      const sync = state.googleSheetsSync;
+      if (!sync || !sync.enabled || !sync.webAppUrl) {
+        if (!silent) showToast("Google 시트 동기화가 비활성화되어 있거나 URL이 없습니다.");
+        return;
+      }
+
+      if (!silent) showToast("Google 시트에서 데이터를 불러오는 중...");
+
+      try {
+        const res = await fetch(sync.webAppUrl, {
+          method: "GET",
+          mode: "cors"
+        });
+
+        if (!res.ok) {
+          throw new Error(`응답 상태 코드: ${res.status}`);
+        }
+
+        const resData = await res.json();
+        if (resData.status === "empty") {
+          if (!silent) showToast("구글 시트에 아직 저장된 데이터가 없습니다. 먼저 내보내기(Push)를 해보세요.");
+          return;
+        }
+
+        if (resData.status === "success" && resData.data) {
+          const localGoogle = { ...state.googleSheetsSync };
+          const localGithub = { ...state.githubSync };
+
+          state = {
+            ...state,
+            ...resData.data,
+            googleSheetsSync: localGoogle,
+            githubSync: localGithub
+          };
+
+          migrateState(state);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          if (!silent) showToast("📊 Google 시트에서 데이터를 성공적으로 불러왔습니다!");
+          renderAll();
+        } else {
+          throw new Error(resData.message || "데이터를 읽을 수 없습니다.");
+        }
+      } catch (err) {
+        console.error(err);
+        if (!silent) showToast(`불러오기 실패: ${err.message}`);
+      }
+    }
+
+    async function pushToGoogleSheets(silent = false) {
+      const sync = state.googleSheetsSync;
+      if (!sync || !sync.enabled || !sync.webAppUrl) {
+        if (!silent) showToast("Google 시트 동기화가 비활성화되어 있습니다.");
+        return;
+      }
+
+      if (!silent) showToast("Google 시트에 데이터를 저장하는 중...");
+
+      try {
+        const cleanState = structuredClone(state);
+        if (cleanState.githubSync) {
+          cleanState.githubSync.token = "";
+          cleanState.githubSync.password = "";
+        }
+
+        const jsonStr = JSON.stringify(cleanState);
+
+        const res = await fetch(sync.webAppUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: jsonStr,
+          mode: "cors"
+        });
+
+        if (!res.ok) {
+          throw new Error(`저장 실패 (상태 코드: ${res.status})`);
+        }
+
+        if (!silent) showToast("📊 Google 시트에 데이터를 안전하게 저장했습니다!");
+      } catch (err) {
+        console.error(err);
+        if (!silent) showToast(`저장 실패: ${err.message}`);
+      }
+    }
+
+    async function pushToGoogleSheetsAuto() {
+      await pushToGoogleSheets(true);
+    }
+
+    async function pullFromGoogleSheetsManual() {
+      await pullFromGoogleSheets(false);
+    }
+
+    async function pushToGoogleSheetsManual() {
+      await pushToGoogleSheets(false);
+    }
+
+    function encodeUtf8Base64(str) {
+      return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode(parseInt(p1, 16));
+      }));
+    }
+
+    function decodeUtf8Base64(b64) {
+      return decodeURIComponent(atob(b64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+          if (!imported.classes) {
+            showToast("올바른 백업 파일이 아닙니다.");
+            return;
+          }
+          state = { ...structuredClone(defaultState), ...imported };
+          migrateState(state);
+          saveState();
+          renderAll();
+          showToast("백업 파일을 가져왔습니다.");
+        } catch {
+          showToast("백업 파일을 읽을 수 없습니다.");
+        }
+      };
+      reader.readAsText(file, "utf-8");
+    }
+
+    function resetAllData() {
+      if (!confirm("등록한 반, 좌석, 특이사항, 출결, 과제 체크, 시간표를 모두 삭제할까요?")) return;
+      state = structuredClone(defaultState);
+      localStorage.removeItem(STORAGE_KEY);
+      renderAll();
+      showToast("전체 데이터를 초기화했습니다.");
+    }
+
+    function downloadTextFile(content, filename, mime) {
+      const blob = new Blob(["\ufeff" + content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function openSettings(tab) {
+      renderAll();
+      showSettingsTab(tab || "roster");
+      openModal("settingsModal");
+    }
+
+    function showSettingsTab(tab) {
+      ["roster", "timetable", "backup", "google", "github"].forEach(name => {
+        document.getElementById(`tab${cap(name)}`)?.classList.toggle("active", tab === name);
+        document.getElementById(`panel${cap(name)}`)?.classList.toggle("active", tab === name);
+      });
+    }
+
+    function toggleClassroomOptions() {
+      const type = document.getElementById("layoutTypeInput").value;
+      document.getElementById("classroomOptions").style.display = type === "classroom" ? "grid" : "none";
+    }
+
+    function clampNumber(value, min, max) {
+      const n = Number.isFinite(value) ? value : min;
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+    // === Web Audio API 사운드 제너레이터 ===
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, duration, type = "sine", gainVal = 0.15) {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {
+        console.error("Audio playback error:", e);
+      }
+    }
+
+    function playTickSound() {
+      playTone(880, 0.04, "triangle", 0.08);
+    }
+
+    function playFanfareSound() {
+      const notes = [
+        { freq: 523.25, time: 0, dur: 0.12 },
+        { freq: 659.25, time: 0.12, dur: 0.12 },
+        { freq: 783.99, time: 0.24, dur: 0.15 },
+        { freq: 1046.50, time: 0.39, dur: 0.45 }
+      ];
+      notes.forEach(n => {
+        setTimeout(() => playTone(n.freq, n.dur, "sine", 0.2), n.time * 1000);
+      });
+    }
+
+    function playAlarmSound() {
+      const seq = [
+        { freq: 659.25, dur: 0.25, delay: 0 },
+        { freq: 523.25, dur: 0.25, delay: 200 },
+        { freq: 587.33, dur: 0.25, delay: 400 },
+        { freq: 783.99, dur: 0.5, delay: 600 }
+      ];
+      seq.forEach(s => setTimeout(() => playTone(s.freq, s.dur, "triangle", 0.25), s.delay));
+      setTimeout(() => {
+        seq.forEach(s => setTimeout(() => playTone(s.freq, s.dur, "triangle", 0.25), s.delay));
+      }, 1200);
+    }
+
+    // === 컨페티 (축하 색종이) 파티클 애니메이션 ===
+    function triggerConfetti() {
+      const canvas = document.getElementById("confettiCanvas");
+      if (!canvas) return;
+      canvas.style.display = "block";
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const ctx = canvas.getContext("2d");
+
+      const colors = ["#2563eb", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#ef4444"];
+      const particles = [];
+      for (let i = 0; i < 90; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height * 0.3 - canvas.height * 0.2,
+          w: Math.random() * 10 + 6,
+          h: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          speedY: Math.random() * 4 + 3,
+          speedX: (Math.random() - 0.5) * 4,
+          rotation: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 10,
+          opacity: 1
+        });
+      }
+
+      let animationId = null;
+      const startTime = Date.now();
+
+      function renderParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const elapsed = Date.now() - startTime;
+        let alive = false;
+
+        particles.forEach(p => {
+          p.y += p.speedY;
+          p.x += p.speedX;
+          p.rotation += p.rotSpeed;
+          if (elapsed > 2000) p.opacity -= 0.02;
+
+          if (p.opacity > 0 && p.y < canvas.height + 20) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.globalAlpha = Math.max(0, p.opacity);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+          }
+        });
+
+        if (alive && elapsed < 3500) {
+          animationId = requestAnimationFrame(renderParticles);
+        } else {
+          cancelAnimationFrame(animationId);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          canvas.style.display = "none";
+        }
+      }
+
+      renderParticles();
+    }
+
+    // === 수업 타이머 (Timer) 제어 로직 ===
+    let timerData = {
+      remainingSec: 300,
+      totalSec: 300,
+      isRunning: false,
+      intervalId: null
+    };
+
+    function formatTimerTime(totalSec) {
+      const s = Math.max(0, Math.floor(totalSec));
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${String(m).padStart(2, "0")}:${String(rem).padStart(2, "0")}`;
+    }
+
+    function updateTimerUI() {
+      const formatted = formatTimerTime(timerData.remainingSec);
+      const isWarning = timerData.remainingSec <= 10 && timerData.remainingSec > 0;
+
+      const big = document.getElementById("timerDisplayBig");
+      if (big) {
+        big.textContent = formatted;
+        big.classList.toggle("warning", isWarning);
+      }
+
+      const fsTime = document.getElementById("timerFullscreenTime");
+      if (fsTime) {
+        fsTime.textContent = formatted;
+        fsTime.classList.toggle("warning", isWarning);
+      }
+
+      const mini = document.getElementById("miniTimerWidget");
+      const miniTime = document.getElementById("miniTimerTime");
+      const miniState = document.getElementById("miniTimerState");
+      if (mini && miniTime) {
+        miniTime.textContent = formatted;
+        mini.classList.toggle("running", timerData.isRunning);
+        if (miniState) miniState.textContent = timerData.isRunning ? "(진행 중)" : "(일시정지)";
+      }
+
+      const toggleBtn = document.getElementById("timerToggleBtn");
+      if (toggleBtn) toggleBtn.textContent = timerData.isRunning ? "일시정지" : "시작";
+
+      const fsToggleBtn = document.getElementById("timerFsToggleBtn");
+      if (fsToggleBtn) fsToggleBtn.textContent = timerData.isRunning ? "일시정지" : "시작";
+    }
+
+    function openTimerModal() {
+      updateTimerUI();
+      openModal("timerModal");
+    }
+
+    function toggleTimer() {
+      if (timerData.isRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    }
+
+    function startTimer() {
+      if (timerData.remainingSec <= 0) {
+        timerData.remainingSec = timerData.totalSec || 300;
+      }
+      if (timerData.intervalId) clearInterval(timerData.intervalId);
+      timerData.isRunning = true;
+      updateTimerUI();
+
+      timerData.intervalId = setInterval(() => {
+        if (timerData.remainingSec > 0) {
+          timerData.remainingSec -= 1;
+          updateTimerUI();
+          if (timerData.remainingSec === 0) {
+            pauseTimer();
+            playAlarmSound();
+            showToast("⏱️ 설정한 활동 시간이 종료되었습니다!");
+          }
+        } else {
+          pauseTimer();
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      if (timerData.intervalId) {
+        clearInterval(timerData.intervalId);
+        timerData.intervalId = null;
+      }
+      timerData.isRunning = false;
+      updateTimerUI();
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timerData.remainingSec = timerData.totalSec || 300;
+      updateTimerUI();
+    }
+
+    function setTimerPreset(seconds) {
+      pauseTimer();
+      timerData.totalSec = seconds;
+      timerData.remainingSec = seconds;
+      updateTimerUI();
+    }
+
+    function adjustTimer(sec) {
+      timerData.remainingSec = Math.max(0, timerData.remainingSec + sec);
+      timerData.totalSec = Math.max(timerData.totalSec, timerData.remainingSec);
+      updateTimerUI();
+    }
+
+    function setCustomTimer() {
+      const min = parseInt(document.getElementById("timerInputMin")?.value || "0", 10);
+      const sec = parseInt(document.getElementById("timerInputSec")?.value || "0", 10);
+      const total = min * 60 + sec;
+      if (total <= 0) {
+        showToast("1초 이상의 시간을 입력하세요.");
+        return;
+      }
+      pauseTimer();
+      timerData.totalSec = total;
+      timerData.remainingSec = total;
+      updateTimerUI();
+      showToast(`타이머를 ${min}분 ${sec}초로 설정했습니다.`);
+    }
+
+    function toggleTimerFullscreen() {
+      const overlay = document.getElementById("timerFullscreenOverlay");
+      if (!overlay) return;
+      const show = !overlay.classList.contains("show");
+      overlay.classList.toggle("show", show);
+      const fsClassTitle = document.getElementById("timerFullscreenClassTitle");
+      if (fsClassTitle) {
+        fsClassTitle.textContent = state.currentClass ? `${state.currentClass} 수업 활동 시간` : "수업 활동 시간";
+      }
+      updateTimerUI();
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        const overlay = document.getElementById("timerFullscreenOverlay");
+        if (overlay && overlay.classList.contains("show")) {
+          overlay.classList.remove("show");
+        }
+      }
+    });
+
+    // === 학생 추첨기 (Lucky Draw) 로직 ===
+    let drawTimer = null;
+    let isDrawing = false;
+
+    function openDrawModal() {
+      const data = currentClassData();
+      if (!data || !data.roster || data.roster.length === 0) {
+        showToast("반 명렬표를 먼저 등록하거나 반을 선택하세요.");
+        return;
+      }
+      renderDrawHistory();
+      document.getElementById("drawNumDisplay").textContent = "행운의 주인공은?";
+      document.getElementById("drawNameDisplay").textContent = "🎲 추첨 대기 중";
+      openModal("drawModal");
+    }
+
+    function getEligibleStudentsForDraw() {
+      const data = currentClassData();
+      if (!data || !data.roster) return [];
+      const excludeAbsent = document.getElementById("drawExcludeAbsent")?.checked !== false;
+      const attMap = getAttendanceMap();
+
+      return data.roster.filter(stu => {
+        if (!excludeAbsent) return true;
+        const rec = attMap[stu.no];
+        const status = rec?.status || "";
+        return status !== "결석" && status !== "조퇴" && status !== "결과";
+      });
+    }
+
+    function startDraw() {
+      if (isDrawing) return;
+      const candidates = getEligibleStudentsForDraw();
+      if (candidates.length === 0) {
+        showToast("추첨 가능한 학생이 없습니다.");
+        return;
+      }
+
+      const countSelect = document.getElementById("drawCountSelect");
+      const count = Math.min(candidates.length, parseInt(countSelect?.value || "1", 10));
+      const soundEnabled = document.getElementById("drawSoundEffect")?.checked !== false;
+
+      isDrawing = true;
+      const btn = document.getElementById("startDrawBtn");
+      if (btn) btn.disabled = true;
+
+      const nameDisplay = document.getElementById("drawNameDisplay");
+      const numDisplay = document.getElementById("drawNumDisplay");
+
+      const winners = [];
+      const pool = candidates.slice();
+      for (let i = 0; i < count; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        winners.push(pool.splice(idx, 1)[0]);
+      }
+
+      let step = 0;
+      const totalSteps = 26;
+      let intervalSpeed = 45;
+
+      function rollAnimation() {
+        const randomStu = candidates[Math.floor(Math.random() * candidates.length)];
+        numDisplay.textContent = `${randomStu.no}번`;
+        nameDisplay.textContent = randomStu.name;
+        if (soundEnabled && step % 2 === 0) playTickSound();
+
+        step++;
+        if (step < totalSteps) {
+          intervalSpeed += 7;
+          drawTimer = setTimeout(rollAnimation, intervalSpeed);
+        } else {
+          isDrawing = false;
+          if (btn) btn.disabled = false;
+
+          if (winners.length === 1) {
+            numDisplay.textContent = `🎉 ${winners[0].no}번 🎉`;
+            nameDisplay.textContent = `✨ ${winners[0].name} ✨`;
+          } else {
+            numDisplay.textContent = `🎉 총 ${winners.length}명 당첨 🎉`;
+            nameDisplay.textContent = winners.map(w => `${w.no}번 ${w.name}`).join(" · ");
+          }
+
+          if (soundEnabled) playFanfareSound();
+          triggerConfetti();
+
+          state.drawHistory ||= {};
+          state.drawHistory[state.currentClass] ||= [];
+          winners.forEach(w => {
+            state.drawHistory[state.currentClass].unshift({
+              no: w.no,
+              name: w.name,
+              time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })
+            });
+          });
+          saveState();
+          renderDrawHistory();
+          showToast(`🎉 당첨자: ${winners.map(w => `${w.no}번 ${w.name}`).join(", ")}`);
+        }
+      }
+
+      rollAnimation();
+    }
+
+    function renderDrawHistory() {
+      const box = document.getElementById("drawWinnerChips");
+      if (!box) return;
+      const list = state.drawHistory?.[state.currentClass] || [];
+      if (list.length === 0) {
+        box.innerHTML = `<span class="small-text">아직 당첨된 학생이 없습니다.</span>`;
+        return;
+      }
+
+      box.innerHTML = list.slice(0, 15).map(item => `
+        <span class="draw-winner-chip">
+          <b>${escapeHtml(item.no)}번 ${escapeHtml(item.name)}</b>
+          <span style="font-size:11px; color:#64748b;">(${escapeHtml(item.time)})</span>
+        </span>
+      `).join("");
+    }
+
+    function resetDrawHistory() {
+      if (!state.currentClass || !state.drawHistory?.[state.currentClass]) return;
+      state.drawHistory[state.currentClass] = [];
+      saveState();
+      renderDrawHistory();
+      showToast("당첨 기록을 초기화했습니다.");
+    }
+
+    // === 모둠 구성 (Group Formation) 로직 ===
+    function openGroupModal() {
+      const data = currentClassData();
+      if (!data || !data.roster || data.roster.length === 0) {
+        showToast("반 명렬표를 먼저 등록하거나 반을 선택하세요.");
+        return;
+      }
+      renderGroupResults();
+      updateGroupSeatToggleButton();
+      openModal("groupModal");
+    }
+
+    function generateGroups() {
+      const data = currentClassData();
+      if (!data || !data.roster || data.roster.length === 0) {
+        showToast("반 명렬표를 먼저 등록하세요.");
+        return;
+      }
+
+      const mode = document.getElementById("groupModeSelect")?.value || "groupCount";
+      const numVal = parseInt(document.getElementById("groupValueInput")?.value || "4", 10);
+      const strategy = document.getElementById("groupStrategySelect")?.value || "random";
+
+      const totalStudents = data.roster.length;
+      let numGroups = 4;
+
+      if (mode === "groupCount") {
+        numGroups = Math.max(1, Math.min(totalStudents, numVal));
+      } else {
+        const perGroup = Math.max(1, numVal);
+        numGroups = Math.max(1, Math.ceil(totalStudents / perGroup));
+      }
+
+      const groups = [];
+      for (let i = 0; i < numGroups; i++) {
+        groups.push({
+          name: `${i + 1}모둠`,
+          members: []
+        });
+      }
+
+      let sortedRoster = data.roster.slice();
+
+      if (strategy === "numberOrder") {
+        sortedRoster.sort((a, b) => Number(a.no) - Number(b.no));
+        sortedRoster.forEach((stu, idx) => {
+          const gIdx = idx % numGroups;
+          groups[gIdx].members.push({ no: stu.no, name: stu.name, level: stu.level });
+        });
+      } else if (strategy === "levelBalanced") {
+        const levelMap = { excellent: [], normal: [], observe: [], low: [] };
+        sortedRoster.forEach(stu => {
+          const lvl = normalizeLevel(stu.level);
+          if (levelMap[lvl]) levelMap[lvl].push(stu);
+          else levelMap.normal.push(stu);
+        });
+
+        let gIdx = 0;
+        let forward = true;
+
+        const orderLevels = ["excellent", "observe", "low", "normal"];
+        orderLevels.forEach(lvl => {
+          const list = levelMap[lvl];
+          for (let i = list.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [list[i], list[j]] = [list[j], list[i]];
+          }
+          list.forEach(stu => {
+            groups[gIdx].members.push({ no: stu.no, name: stu.name, level: stu.level });
+            if (forward) {
+              gIdx++;
+              if (gIdx >= numGroups) {
+                gIdx = numGroups - 1;
+                forward = false;
+              }
+            } else {
+              gIdx--;
+              if (gIdx < 0) {
+                gIdx = 0;
+                forward = true;
+              }
+            }
+          });
+        });
+      } else {
+        for (let i = sortedRoster.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [sortedRoster[i], sortedRoster[j]] = [sortedRoster[j], sortedRoster[i]];
+        }
+        sortedRoster.forEach((stu, idx) => {
+          const gIdx = idx % numGroups;
+          groups[gIdx].members.push({ no: stu.no, name: stu.name, level: stu.level });
+        });
+      }
+
+      groups.forEach(g => {
+        g.members.sort((a, b) => Number(a.no) - Number(b.no));
+      });
+
+      state.groups ||= {};
+      state.groups[state.currentClass] = {
+        showOnSeats: true,
+        list: groups
+      };
+
+      saveState();
+      renderGroupResults();
+      updateGroupSeatToggleButton();
+      renderBoard();
+      showToast(`🎉 ${numGroups}개 모둠이 성공적으로 생성되었습니다!`);
+    }
+
+    function updateGroupSeatToggleButton() {
+      const btn = document.getElementById("toggleSeatGroupBadgeBtn");
+      if (!btn) return;
+      const isShow = !!state.groups?.[state.currentClass]?.showOnSeats;
+      btn.textContent = isShow ? "좌석표에 모둠 표시 끄기" : "좌석표에 모둠 표시 켜기";
+      btn.className = isShow ? "primary" : "secondary";
+    }
+
+    function toggleGroupSeatBadge() {
+      if (!state.currentClass) return;
+      state.groups ||= {};
+      state.groups[state.currentClass] ||= { showOnSeats: false, list: [] };
+      state.groups[state.currentClass].showOnSeats = !state.groups[state.currentClass].showOnSeats;
+      saveState();
+      updateGroupSeatToggleButton();
+      renderBoard();
+      showToast(state.groups[state.currentClass].showOnSeats ? "좌석표에 모둠 뱃지를 표시합니다." : "좌석표 모둠 뱃지 표시를 해제했습니다.");
+    }
+
+    function clearGroups() {
+      if (!state.currentClass) return;
+      if (!confirm(`${state.currentClass} 반의 모둠 구성을 초기화할까요?`)) return;
+      if (state.groups?.[state.currentClass]) {
+        delete state.groups[state.currentClass];
+      }
+      saveState();
+      renderGroupResults();
+      updateGroupSeatToggleButton();
+      renderBoard();
+      showToast("모둠 구성을 초기화했습니다.");
+    }
+
+    function renderGroupResults() {
+      const box = document.getElementById("groupCardsGrid");
+      if (!box) return;
+      const groupObj = state.groups?.[state.currentClass];
+      const list = groupObj?.list || [];
+
+      if (list.length === 0) {
+        box.innerHTML = `<div class="empty-box" style="grid-column: 1 / -1;">아직 생성된 모둠이 없습니다.<br>위의 ‘모둠 자동 생성’ 버튼을 눌러 모둠을 만들어 보세요.</div>`;
+        return;
+      }
+
+      const levelTextMap = { low: "부진", normal: "보통", excellent: "우수", observe: "관찰" };
+
+      box.innerHTML = list.map((grp, idx) => {
+        const colorIdx = (idx % 12) + 1;
+        return `
+          <div class="group-card">
+            <div class="group-card-head group-color-${colorIdx}">
+              <span>${escapeHtml(grp.name)}</span>
+              <span style="font-size:12px; font-weight:normal; opacity:0.9;">(${grp.members.length}명)</span>
+            </div>
+            <div class="group-card-body">
+              ${grp.members.map(m => `
+                <div class="group-member-row">
+                  <span class="group-member-name">${escapeHtml(m.no)}번 ${escapeHtml(m.name)}</span>
+                  <span class="group-member-level level-${normalizeLevel(m.level)}">${levelTextMap[normalizeLevel(m.level)] || "보통"}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function copyGroupList() {
+      const groupObj = state.groups?.[state.currentClass];
+      const list = groupObj?.list || [];
+      if (list.length === 0) {
+        showToast("복사할 모둠 명단이 없습니다.");
+        return;
+      }
+
+      let text = `[${state.currentClass} 모둠 구성 명단]\n\n`;
+      list.forEach(grp => {
+        text += `■ ${grp.name} (${grp.members.length}명)\n`;
+        text += grp.members.map(m => ` - ${m.no}번 ${m.name}`).join("\n");
+        text += "\n\n";
+      });
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("📋 모둠 명단을 클립보드에 복사했습니다!");
+      }).catch(() => {
+        showToast("클립보드 복사에 실패했습니다.");
+      });
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add("show"); }
+    function closeModal(id) { document.getElementById(id).classList.remove("show"); }
+    function backdropClose(event, id) { if (event.target.id === id) closeModal(id); }
+
+    function renderAll() {
+      renderPeriods();
+      renderClassOptions();
+      renderTimetable();
+      setMode(state.mode || "move");
+      renderBoard();
+      renderAttendanceRecords();
+      renderProgressRecords();
+      renderProgressSummary();
+      renderAssignmentReportDateOptions();
+      renderAssignmentReport();
+      toggleClassroomOptions();
+      loadGithubSettingsToUI();
+      loadGoogleSheetsSettingsToUI();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeAttr(value) { return escapeHtml(value); }
+
+    function escapeJs(value) {
+      return String(value ?? "")
+        .replaceAll("\\", "\\\\")
+        .replaceAll("'", "\\'")
+        .replaceAll("\n", "\\n")
+        .replaceAll("\r", "");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("dateInput").value = todayString();
+      renderAll();
+      if (state.googleSheetsSync && state.googleSheetsSync.enabled) {
+        pullFromGoogleSheets(true); // Silent pull from Google Sheets on load
+      } else if (state.githubSync && state.githubSync.enabled) {
+        pullFromGithub(true); // Silent pull from GitHub on load
+      }
+    });
+  </script>
+</body>
+</html>
