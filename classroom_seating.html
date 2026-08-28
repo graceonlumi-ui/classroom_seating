@@ -15,12 +15,12 @@
       --dark: #111827;
       --shadow: 0 14px 36px rgba(15, 23, 42, 0.12);
       --radius: 22px;
-      --seat-gap: clamp(5px, 0.75vw, 12px);
-      --row-gap: clamp(7px, 0.9vw, 14px);
-      --seat-height: clamp(76px, 9vw, 118px);
-      --pc-font: clamp(22px, 2.2vw, 34px);
-      --student-font: clamp(17px, 1.9vw, 29px);
-      --student-no-font: clamp(14px, 1.25vw, 20px);
+      --seat-gap: clamp(3px, 0.75vw, 12px);
+      --row-gap: clamp(5px, 0.9vw, 14px);
+      --seat-height: clamp(48px, 8.5vw, 118px);
+      --pc-font: clamp(10px, 2vw, 34px);
+      --student-font: clamp(10px, 1.8vw, 29px);
+      --student-no-font: clamp(8px, 1.2vw, 20px);
     }
 
     * { box-sizing: border-box; }
@@ -967,23 +967,152 @@
       .timetable-grid { grid-template-columns: 64px 1fr; }
       .tt-head.day { display: none; }
       .lab-row {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(18px, .22fr) repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(14px, .18fr) repeat(4, minmax(0, 1fr));
       }
-
       .lab-row.mirrored {
-        grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(18px, .22fr) repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(14px, .18fr) repeat(3, minmax(0, 1fr));
       }
     }
 
-    @media (max-width: 640px) {
-      header { padding: 10px; }
-      main { padding: 10px; }
-      .main-board { padding: 12px; }
-      .class-title { font-size: 25px; }
-      .mini-controls { padding: 8px; }
+    @media (max-width: 768px) {
+      :root {
+        --seat-gap: clamp(2px, 0.8vw, 4px);
+        --row-gap: clamp(4px, 1vw, 6px);
+        --seat-height: clamp(52px, 13.5vw, 78px);
+        --pc-font: clamp(10px, 2.6vw, 15px);
+        --student-font: clamp(10px, 2.9vw, 16px);
+        --student-no-font: clamp(8px, 2vw, 12px);
+      }
+      header { padding: 8px 10px; }
+      h1 { font-size: 17px; }
+      .sub { font-size: 11px; }
+      .header-inner { gap: 6px; }
+      .actions { gap: 4px; }
+      .actions button { padding: 6px 8px; font-size: 11.5px; border-radius: 8px; }
+      main { padding: 6px 8px; }
+      .main-board { padding: 8px; border-radius: 14px; min-height: auto; }
+      .class-title { font-size: 20px; }
+      .mini-controls { padding: 6px; gap: 4px; }
       .control-field, .control-field.wide, .control-field:nth-child(2) { width: 100%; }
-      .seat-area { overflow-x: auto; }
-      .seat-rows { min-width: 720px; }
+      .mode-bar { gap: 4px; margin-bottom: 8px; }
+      .mode-bar button { padding: 6px 8px; font-size: 11.5px; }
+      .mode-help { font-size: 11px; width: 100%; margin-top: 2px; }
+      .seat-area { padding: 6px 4px; border-radius: 12px; min-height: auto; }
+      .front { padding: 6px; font-size: 12px; margin-bottom: 8px; border-radius: 8px; }
+      .aisle { font-size: 8px; border-radius: 6px; min-height: var(--seat-height); }
+      
+      .seat {
+        border-width: 2px;
+        border-radius: 10px;
+        padding: 2px 1px;
+        box-shadow: 0 3px 8px rgba(37, 99, 235, .10);
+      }
+      .seat:hover { transform: none; }
+
+      .pc-no {
+        top: 2px;
+        min-width: clamp(18px, 5.5vw, 34px);
+        height: clamp(14px, 3.8vw, 22px);
+        padding: 0 2px;
+        border-width: 1px;
+        border-radius: 5px;
+      }
+
+      .student-line {
+        padding-top: clamp(16px, 4.4vw, 24px);
+        flex-direction: column;
+        gap: 1px;
+        align-items: center;
+      }
+
+      .student-num {
+        min-width: auto;
+        height: auto;
+        padding: 1px 4px;
+        border-radius: 6px;
+        font-size: var(--student-no-font);
+        line-height: 1.1;
+      }
+
+      .student-name {
+        font-size: var(--student-font);
+        line-height: 1.15;
+        max-width: 100%;
+        text-align: center;
+      }
+
+      .empty-name {
+        margin-top: clamp(16px, 4.4vw, 24px);
+        font-size: clamp(9px, 2.4vw, 13px);
+      }
+
+      .att-badge {
+        font-size: 8.5px;
+        padding: 1px 3px;
+        top: 2px;
+        right: 2px;
+        border-radius: 4px;
+      }
+
+      .task-check {
+        width: 17px;
+        height: 17px;
+        font-size: 9px;
+        top: 2px;
+        left: 2px;
+        border-width: 1px;
+        border-radius: 4px;
+      }
+
+      .group-badge {
+        font-size: 8px;
+        padding: 1px 4px;
+        bottom: 2px;
+        border-radius: 6px;
+      }
+
+      .note-dot {
+        width: 7px;
+        height: 7px;
+        right: 3px;
+        bottom: 3px;
+        border-width: 1px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      :root {
+        --seat-gap: 2px;
+        --row-gap: 4px;
+        --seat-height: clamp(46px, 14.5vw, 68px);
+        --pc-font: clamp(8.5px, 2.6vw, 12px);
+        --student-font: clamp(9px, 2.9vw, 13px);
+        --student-no-font: clamp(7.5px, 2vw, 10px);
+      }
+      .lab-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(6px, .08fr) repeat(4, minmax(0, 1fr));
+      }
+      .lab-row.mirrored {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(6px, .08fr) repeat(3, minmax(0, 1fr));
+      }
+      .seat {
+        border-width: 1.5px;
+        border-radius: 7px;
+      }
+      .student-line {
+        padding-top: 14px;
+      }
+      .student-num {
+        padding: 0 3px;
+      }
+      .student-name {
+        font-size: var(--student-font);
+      }
+      .task-check {
+        width: 14px;
+        height: 14px;
+        font-size: 8px;
+      }
     }
 
     @media print {
